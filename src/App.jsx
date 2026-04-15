@@ -1,15 +1,27 @@
 import { ThemeProvider } from "./context/ThemeContext";
-import { EditorProvider } from "./context/EditorContext";
+import { EditorProvider, useEditorContext } from "./context/EditorContext";
+import { Toaster } from "react-hot-toast";
+import WelcomePage from "./pages/WelcomePage";
+import EditorPage from "./pages/EditorPage";
+
+const AppContent = () => {
+  const { appState } = useEditorContext();
+
+  return (
+    <>
+      <Toaster />
+      {appState === "welcome" && <WelcomePage />}
+      {appState === "editing" && <EditorPage />}
+      {appState === "focusMode" && <EditorPage />}
+    </>
+  );
+};
 
 const App = () => {
   return (
     <ThemeProvider>
       <EditorProvider>
-        <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-app)" }}>
-          <p style={{ color: "var(--text-primary)", padding: "2rem" }}>
-            InkFlow is loading... Day 4 complete.
-          </p>
-        </div>
+        <AppContent />
       </EditorProvider>
     </ThemeProvider>
   );
