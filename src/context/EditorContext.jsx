@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import { generateDocId, saveDocument } from "../utils/localStorage";
 
 const EditorContext = createContext(null);
 
@@ -9,7 +10,17 @@ export const EditorProvider = ({ children }) => {
   const [initialContent, setInitialContent] = useState(null);
 
   const openNewDocument = () => {
-    const id = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateDocId();
+    const newDoc = {
+      id,
+      title: "Untitled Document",
+      content: null,
+      wordCount: 0,
+      preview: "",
+      createdAt: new Date().toISOString(),
+      lastEditedAt: new Date().toISOString(),
+    };
+    saveDocument(newDoc);
     setCurrentDocId(id);
     setCurrentTitle("Untitled Document");
     setInitialContent(null);
@@ -18,8 +29,8 @@ export const EditorProvider = ({ children }) => {
 
   const openExistingDocument = (doc) => {
     setCurrentDocId(doc.id);
-    setCurrentTitle(doc.title);
-    setInitialContent(doc.content);
+    setCurrentTitle(doc.title || "Untitled Document");
+    setInitialContent(doc.content ?? null);
     setAppState("editing");
   };
 

@@ -1,11 +1,9 @@
 const STORAGE_KEY = "inkflow_documents";
 const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024; // 5MB
 
-// ── Read all documents ────────────────────────────────────────
 export const getAllDocuments = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    const raw = localStorage.getItem(STORAGE_KEY || "[]");
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed;
@@ -14,7 +12,6 @@ export const getAllDocuments = () => {
   }
 };
 
-// ── Save or update a single document ─────────────────────────
 export const saveDocument = (doc) => {
   try {
     const all = getAllDocuments();
@@ -36,7 +33,6 @@ export const saveDocument = (doc) => {
   }
 };
 
-// ── Get one document by ID ────────────────────────────────────
 export const getDocumentById = (id) => {
   try {
     const all = getAllDocuments();
@@ -46,7 +42,6 @@ export const getDocumentById = (id) => {
   }
 };
 
-// ── Delete a document ─────────────────────────────────────────
 export const deleteDocument = (id) => {
   try {
     const all = getAllDocuments();
@@ -58,12 +53,10 @@ export const deleteDocument = (id) => {
   }
 };
 
-// ── Generate a unique document ID ────────────────────────────
 export const generateDocId = () => {
   return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// ── Calculate storage usage ───────────────────────────────────
 export const getStorageUsage = () => {
   try {
     let totalBytes = 0;
