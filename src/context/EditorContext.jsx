@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 import { generateDocId, saveDocument } from "../utils/localStorage";
 
 const EditorContext = createContext(null);
@@ -8,6 +8,13 @@ export const EditorProvider = ({ children }) => {
   const [currentDocId, setCurrentDocId] = useState(null);
   const [currentTitle, setCurrentTitle] = useState("Untitled Document");
   const [initialContent, setInitialContent] = useState(null);
+  const editorRef = useRef(null);
+
+  const setEditor = (editorInstance) => {
+    editorRef.current = editorInstance;
+  };
+
+  const getEditor = () => editorRef.current;
 
   const openNewDocument = () => {
     const id = generateDocId();
@@ -39,6 +46,7 @@ export const EditorProvider = ({ children }) => {
     setCurrentDocId(null);
     setCurrentTitle("Untitled Document");
     setInitialContent(null);
+    editorRef.current = null;
   };
 
   const enterFocusMode = () => setAppState("focusMode");
@@ -55,6 +63,8 @@ export const EditorProvider = ({ children }) => {
     returnToWelcome,
     enterFocusMode,
     exitFocusMode,
+    setEditor,
+    getEditor,
   };
 
   return (

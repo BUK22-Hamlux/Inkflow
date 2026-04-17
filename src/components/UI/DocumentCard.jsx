@@ -89,7 +89,6 @@ const DocumentCard = ({ doc, onOpen, onDelete }) => {
           </p>
         </div>
 
-        {/* Meta info + delete */}
         <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
           <span className="text-xs text-text-muted whitespace-nowrap">
             {formatDate(doc.lastEditedAt)}
@@ -98,7 +97,6 @@ const DocumentCard = ({ doc, onOpen, onDelete }) => {
             {(doc.wordCount ?? 0).toLocaleString()} words
           </span>
 
-          {/* Delete button */}
           <button
             onClick={handleDelete}
             className="

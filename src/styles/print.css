@@ -1,0 +1,129 @@
+/* ============================================================
+   INKFLOW — PRINT STYLESHEET
+   Only activates when the user prints or calls window.print().
+   Everything here overrides the normal screen styles.
+   The goal: hide all app chrome and print only the document.
+   ============================================================ */
+
+@media print {
+
+  /* ── Hide everything that is not the document ────────────── */
+  header,
+  nav,
+  aside,
+  footer,
+  .toolbar-btn,
+  [role="toolbar"],
+  [role="navigation"],
+  [role="complementary"],
+  [role="status"] {
+    display: none !important;
+  }
+
+  /* ── Reset the page background ───────────────────────────── */
+  html,
+  body {
+    background-color: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  /* ── Make the editor canvas fill the full printed page ───── */
+  .editor-canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+    min-height: auto !important;
+  }
+
+  /* ── ProseMirror content for print ───────────────────────── */
+  .ProseMirror {
+    font-size: 12pt !important;
+    line-height: 1.6 !important;
+    color: #000000 !important;
+    min-height: auto !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Headings for print ───────────────────────────────────── */
+  .ProseMirror h1 {
+    font-size: 24pt !important;
+    margin: 0 0 12pt 0 !important;
+    page-break-after: avoid;
+  }
+
+  .ProseMirror h2 {
+    font-size: 18pt !important;
+    margin: 18pt 0 10pt 0 !important;
+    page-break-after: avoid;
+  }
+
+  .ProseMirror h3 {
+    font-size: 14pt !important;
+    margin: 14pt 0 8pt 0 !important;
+    page-break-after: avoid;
+  }
+
+  /* ── Prevent orphaned content ─────────────────────────────── */
+  .ProseMirror p {
+    orphans: 3;
+    widows: 3;
+    margin: 0 0 8pt 0 !important;
+  }
+
+  /* ── Links — show the URL next to the link text ──────────── */
+  .ProseMirror a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #555555;
+  }
+
+  /* ── Hide placeholder text on print ──────────────────────── */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    display: none !important;
+  }
+
+  /* ── Images — prevent overflow on print ──────────────────── */
+  .ProseMirror img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* ── Blockquote on print ──────────────────────────────────── */
+  .ProseMirror blockquote {
+    border-left: 3px solid #cccccc !important;
+    background: none !important;
+    padding: 4pt 0 4pt 12pt !important;
+    margin: 8pt 0 !important;
+    page-break-inside: avoid;
+  }
+
+  /* ── Code on print ───────────────────────────────────────── */
+  .ProseMirror pre,
+  .ProseMirror code {
+    background-color: #f5f5f5 !important;
+    border: 1px solid #dddddd !important;
+    font-size: 10pt !important;
+    page-break-inside: avoid;
+  }
+
+  /* ── Lists on print ──────────────────────────────────────── */
+  .ProseMirror ul,
+  .ProseMirror ol {
+    page-break-inside: avoid;
+  }
+
+  /* ── Page margins for the printed paper itself ───────────── */
+  @page {
+    margin: 2cm;
+    size: A4 portrait;
+  }
+
+}

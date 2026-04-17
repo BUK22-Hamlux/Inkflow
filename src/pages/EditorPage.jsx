@@ -1,4 +1,5 @@
 import EditorLayout from "../layouts/EditorLayout";
+import EditorCanvas from "../components/Editor/EditorCanvas";
 
 const EditorPage = () => {
   return (
@@ -15,11 +16,7 @@ const EditorPage = () => {
         </div>
       }
       sidebar={null}
-      canvas={
-        <div className="w-198.5 max-w-full min-h-250 bg-editor shadow-editor rounded-sm my-10 mx-auto p-24 text-text-muted text-sm transition-all duration-theme">
-          Editor Canvas
-        </div>
-      }
+      canvas={<EditorCanvas />}
       statusBar={
         <div className="h-full flex items-center px-4 text-text-secondary text-xs">
           Words: 0 | Characters: 0
