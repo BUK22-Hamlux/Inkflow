@@ -137,10 +137,8 @@ const WelcomePage = () => {
           </div>
         )}
 
-        {/* ── Header ─────────────────────────────────────── */}
         <WelcomeHeader />
 
-        {/* ── Drag and Drop Section ─────────────────────────────────────── */}
         <DragAndDropSection
           isDraggingOver={isDraggingOver}
           fileInputRef={fileInputRef}
@@ -148,7 +146,6 @@ const WelcomePage = () => {
           handleOpenFileClick={handleOpenFileClick}
         />
 
-        {/* ── Divider ─────────────────────────────────────── */}
         <div
           className="flex items-center gap-4 w-full max-w-lg mb-8"
           role="separator"
@@ -161,13 +158,10 @@ const WelcomePage = () => {
           <div className="flex-1 h-px bg-border-toolbar" />
         </div>
 
-        {/* ── CTA Buttons ─────────────────────────────────── */}
         <WelcomeCTASection
           openNewDocument={openNewDocument}
           handleOpenFileClick={handleOpenFileClick}
         />
-
-        {/* ── Recent Documents ─────────────────────────────── */}
         <RecentDocumentsSection
           isLoadingDocs={isLoadingDocs}
           documents={documents}
@@ -175,7 +169,6 @@ const WelcomePage = () => {
           handleDeleteDocument={handleDeleteDocument}
         />
 
-        {/* ── Footer ──────────────────────────────────────── */}
         <footer className="mt-12 text-center">
           <p className="text-xs text-text-muted">
             Your documents are saved locally in your browser.{" "}

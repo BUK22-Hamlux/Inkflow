@@ -33,7 +33,6 @@ const RecentDocumentsSection = ({
         </ul>
       )}
 
-      {/* Empty state */}
       {!isLoadingDocs && documents.length === 0 && (
         <div
           className="flex flex-col items-center justify-center py-12 px-6 border border-border-toolbar rounded-2xl bg-editor text-center"

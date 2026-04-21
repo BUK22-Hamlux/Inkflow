@@ -1,11 +1,11 @@
 const EditorLayout = ({ menuBar, toolbar, sidebar, canvas, statusBar }) => {
   return (
     <div className="flex flex-col h-screen w-full bg-app overflow-hidden transition-all duration-theme">
-      <header className="h-10 shrink-0 bg-toolbar border-b border-border-toolbar shadow-toolbar z-50 overflow-hidden">
+      <header className="h-10 shrink-0 bg-toolbar border-b border-border-toolbar shadow-toolbar z-10 overflow-hidden">
         {menuBar}
       </header>
 
-      <nav className="h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-40 overflow-hidden">
+      <nav className="h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-50">
         {toolbar}
       </nav>
 

@@ -12,6 +12,49 @@ import Superscript from "@tiptap/extension-superscript";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import { useEditorContext } from "../../context/EditorContext";
+import { Extension } from "@tiptap/core";
+
+const FontSize = Extension.create({
+  name: "fontSize",
+  addOptions() {
+    return { types: ["textStyle"] };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) =>
+              element.style.fontSize?.replace(/['"]+/g, "") || null,
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        (fontSize) =>
+        ({ chain }) => {
+          return chain().setMark("textStyle", { fontSize }).run();
+        },
+      unsetFontSize:
+        () =>
+        ({ chain }) => {
+          return chain()
+            .setMark("textStyle", { fontSize: null })
+            .removeEmptyTextStyle()
+            .run();
+        },
+    };
+  },
+});
 
 const EditorCanvas = () => {
   const { initialContent, setEditor } = useEditorContext();
@@ -26,33 +69,22 @@ const EditorCanvas = () => {
         heading: {
           levels: [1, 2, 3, 4],
         },
+        underline: false,
+        link: false,
       }),
-
       TextStyle,
-
-      FontFamily.configure({
-        types: ["textStyle"],
-      }),
-
-      Color.configure({
-        types: ["textStyle"],
-      }),
-
+      FontSize,
+      FontFamily.configure({ types: ["textStyle"] }),
+      Color.configure({ types: ["textStyle"] }),
       Underline,
-
-      Highlight.configure({
-        multicolor: true,
-      }),
-
+      Highlight.configure({ multicolor: true }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
         alignments: ["left", "center", "right", "justify"],
         defaultAlignment: "left",
       }),
-
       Subscript,
       Superscript,
-
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -60,18 +92,13 @@ const EditorCanvas = () => {
           target: "_blank",
         },
       }),
-
       Image.configure({
         inline: false,
         allowBase64: true,
-        HTMLAttributes: {
-          class: "editor-image",
-        },
+        HTMLAttributes: { class: "editor-image" },
       }),
     ],
-
     content: initialContent ?? "<p></p>",
-
     editorProps: {
       attributes: {
         class: "ProseMirror",
@@ -82,7 +109,6 @@ const EditorCanvas = () => {
         spellcheck: "true",
       },
     },
-
     autofocus: "end",
   });
 
@@ -95,17 +121,8 @@ const EditorCanvas = () => {
   useEffect(() => {
     if (!editor) return;
     if (!initialContent) return;
-
-    const isHtml = typeof initialContent === "string";
-    const isEmpty = editor.isEmpty;
-
-    if (isHtml && isEmpty) {
-      editor.commands.setContent(initialContent);
-      editor.commands.focus("end");
-    } else if (isHtml && !isEmpty) {
-      editor.commands.setContent(initialContent);
-      editor.commands.focus("end");
-    }
+    editor.commands.setContent(initialContent);
+    editor.commands.focus("end");
   }, [editor, initialContent]);
 
   useEffect(() => {
@@ -135,11 +152,7 @@ const EditorCanvas = () => {
   }
 
   return (
-    <article
-      className="editor-canvas"
-      aria-label="Document editor canvas"
-      role="main"
-    >
+    <article className="editor-canvas" aria-label="Document editor canvas">
       <EditorContent editor={editor} aria-label="Document editing area" />
     </article>
   );
