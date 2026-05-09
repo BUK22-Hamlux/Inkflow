@@ -9,6 +9,12 @@ export const EditorProvider = ({ children }) => {
   const [currentTitle, setCurrentTitle] = useState("Untitled Document");
   const [initialContent, setInitialContent] = useState(null);
   const [editor, setEditorInstance] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
 
   const setEditor = (editorInstance) => {
     setEditorInstance(editorInstance);
@@ -58,14 +64,24 @@ export const EditorProvider = ({ children }) => {
     currentTitle,
     initialContent,
     editor,
+    isSidebarOpen,
+    isExportModalOpen,
+    isShortcutsModalOpen,
+    isFindReplaceOpen,
+    isAboutModalOpen,
     setCurrentTitle,
+    setEditor,
+    getEditor,
     openNewDocument,
     openExistingDocument,
     returnToWelcome,
     enterFocusMode,
     exitFocusMode,
-    setEditor,
-    getEditor,
+    setIsSidebarOpen,
+    setIsExportModalOpen,
+    setIsShortcutsModalOpen,
+    setIsFindReplaceOpen,
+    setIsAboutModalOpen,
   };
 
   return (

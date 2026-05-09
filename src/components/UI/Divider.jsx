@@ -2,11 +2,7 @@ const Divider = ({ orientation = "vertical", className = "" }) => {
   if (orientation === "horizontal") {
     return (
       <hr
-        className={`w-full border-none ${className}`}
-        style={{
-          height: "1px",
-          backgroundColor: "var(--border-toolbar)",
-        }}
+        className={`w-full border-none h-px bg-border-toolbar ${className}`}
         aria-hidden="true"
         role="separator"
         aria-orientation="horizontal"
@@ -16,12 +12,7 @@ const Divider = ({ orientation = "vertical", className = "" }) => {
 
   return (
     <div
-      className={`shrink-0 ${className}`}
-      style={{
-        width: "1px",
-        height: "20px",
-        backgroundColor: "var(--border-toolbar)",
-      }}
+      className={`shrink-0 w-px h-5 bg-border-toolbar ${className}`}
       aria-hidden="true"
       role="separator"
       aria-orientation="vertical"

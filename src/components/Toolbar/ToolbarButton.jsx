@@ -61,7 +61,7 @@ const ToolbarButton = forwardRef(
     const tooltipLabel = shortcut ? `${label} (${shortcut})` : label;
 
     return (
-      <Tooltip label={tooltipLabel} position="top" delay={200}>
+      <Tooltip label={tooltipLabel} delay={200}>
         <button
           ref={ref}
           type="button"

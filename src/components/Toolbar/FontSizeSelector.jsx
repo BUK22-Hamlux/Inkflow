@@ -8,17 +8,17 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
 
   const handleIncrement = () => {
     const current = parseInt(currentSize ?? "14", 10);
-    const currentIndex = fontSizes.indexOf(current);
-    if (currentIndex < fontSizes.length - 1) {
-      onSizeChange(String(fontSizes[currentIndex + 1]));
+    const nextSize = fontSizes.find((size) => size > current);
+    if (nextSize) {
+      onSizeChange(String(nextSize));
     }
   };
 
   const handleDecrement = () => {
     const current = parseInt(currentSize ?? "14", 10);
-    const currentIndex = fontSizes.indexOf(current);
-    if (currentIndex > 0) {
-      onSizeChange(String(fontSizes[currentIndex - 1]));
+    const prevSize = fontSizes.findLast((size) => size < current);
+    if (prevSize) {
+      onSizeChange(String(prevSize));
     }
   };
 
@@ -62,14 +62,7 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
 
   return (
     <div
-      className="
-        flex items-center
-        h-8 rounded-md
-        border border-transparent
-        hover:border-border-input
-        transition-all duration-100
-        overflow-hidden
-      "
+      className=" flex items-center h-8 rounded-md border border-transparent hover:border-border-input transition-all duration-100 overflow-hidden"
       role="group"
       aria-label="Font size control"
     >
@@ -79,16 +72,7 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
         onClick={handleDecrement}
         disabled={disabled}
         aria-label="Decrease font size"
-        className="
-          w-6 h-full
-          flex items-center justify-center
-          text-text-muted
-          hover:text-text-primary hover:bg-accent-secondary
-          disabled:opacity-40 disabled:cursor-not-allowed
-          transition-all duration-100
-          text-base leading-none
-          shrink-0
-        "
+        className=" w-6 h-full flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-accent-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-100 text-base leading-none shrink-0"
       >
         −
       </button>
@@ -105,14 +89,7 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
         onKeyDown={handleInputKeyDown}
         disabled={disabled}
         aria-label={`Font size: ${currentSize ?? "14"} points`}
-        className="
-          w-9 h-full
-          text-center text-xs font-medium
-          text-text-primary
-          bg-transparent
-          border-none outline-none
-          disabled:opacity-40 disabled:cursor-not-allowed
-        "
+        className=" w-9 h-full text-center text-xs font-medium text-text-primary bg-transparent border-none outline-none disabled:opacity-40 disabled:cursor-not-allowed"
       />
 
       {/* Increment button */}
@@ -121,16 +98,7 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
         onClick={handleIncrement}
         disabled={disabled}
         aria-label="Increase font size"
-        className="
-          w-6 h-full
-          flex items-center justify-center
-          text-text-muted
-          hover:text-text-primary hover:bg-accent-secondary
-          disabled:opacity-40 disabled:cursor-not-allowed
-          transition-all duration-100
-          text-base leading-none
-          shrink-0
-        "
+        className=" w-6 h-full flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-accent-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-100 text-base leading-none shrink-0"
       >
         +
       </button>

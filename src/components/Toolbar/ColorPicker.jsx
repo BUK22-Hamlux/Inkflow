@@ -30,11 +30,7 @@ const ColorPicker = ({
         disabled={disabled}
         aria-label={label}
         aria-disabled={disabled}
-        className="
-          toolbar-btn
-          flex-col gap-0.5
-          disabled:opacity-40 disabled:cursor-not-allowed
-        "
+        className=" toolbar-btn flex-col gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span
           className="text-sm font-bold leading-none"
@@ -48,7 +44,6 @@ const ColorPicker = ({
           {isText ? "A" : "A"}
         </span>
 
-        {/* Color swatch bar below the letter */}
         <span
           className="w-4 h-1 rounded-full"
           style={{
@@ -60,7 +55,6 @@ const ColorPicker = ({
         />
       </button>
 
-      {/* Hidden native color input */}
       <input
         ref={inputRef}
         type="color"
@@ -69,10 +63,7 @@ const ColorPicker = ({
         disabled={disabled}
         aria-hidden="true"
         tabIndex={-1}
-        className="
-          absolute opacity-0
-          w-0 h-0 pointer-events-none
-        "
+        className="absolute opacity-0 hidden pointer-events-none"
       />
     </div>
   );

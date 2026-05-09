@@ -1,17 +1,25 @@
 import { useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
-const Tooltip = ({
-  label,
-  children,
-  position = "top",
-  delay = 200,
-  disabled = false,
-}) => {
+const Tooltip = ({ label, children, delay = 200, disabled = false }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
   const timerRef = useRef(null);
+  const triggerRef = useRef(null);
 
   const showTooltip = useCallback(() => {
     if (disabled || !label) return;
+
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+
+      // Calculate coordinates: Center of the button, above it
+      setCoords({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX + rect.width / 2,
+      });
+    }
+
     timerRef.current = setTimeout(() => {
       setIsVisible(true);
     }, delay);
@@ -25,109 +33,38 @@ const Tooltip = ({
     setIsVisible(false);
   }, []);
 
-  // Position styles map
-  const positionStyles = {
-    top: {
-      bottom: "calc(100% + 8px)",
-      left: "50%",
-      transform: "translateX(-50%)",
-    },
-    bottom: {
-      top: "calc(100% + 8px)",
-      left: "50%",
-      transform: "translateX(-50%)",
-    },
-    left: {
-      right: "calc(100% + 8px)",
-      top: "50%",
-      transform: "translateY(-50%)",
-    },
-    right: {
-      left: "calc(100% + 8px)",
-      top: "50%",
-      transform: "translateY(-50%)",
-    },
-  };
-
-  // Arrow position styles map
-  const arrowStyles = {
-    top: {
-      top: "100%",
-      left: "50%",
-      transform: "translateX(-50%)",
-      borderColor: "var(--bg-dropdown) transparent transparent transparent",
-    },
-    bottom: {
-      bottom: "100%",
-      left: "50%",
-      transform: "translateX(-50%)",
-      borderColor: "transparent transparent var(--bg-dropdown) transparent",
-    },
-    left: {
-      left: "100%",
-      top: "50%",
-      transform: "translateY(-50%)",
-      borderColor: "transparent transparent transparent var(--bg-dropdown)",
-    },
-    right: {
-      right: "100%",
-      top: "50%",
-      transform: "translateY(-50%)",
-      borderColor: "transparent var(--bg-dropdown) transparent transparent",
-    },
-  };
-
   return (
     <div
+      ref={triggerRef}
       className="relative inline-flex items-center justify-center"
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
       onBlur={hideTooltip}
     >
-      {/* The wrapped element — whatever you pass as children */}
       {children}
 
-      {/* Tooltip bubble */}
-      {isVisible && label && (
-        <div
-          role="tooltip"
-          aria-live="polite"
-          style={{
-            position: "absolute",
-            ...positionStyles[position],
-            backgroundColor: "var(--bg-dropdown)",
-            color: "var(--text-primary)",
-            boxShadow: "var(--shadow-dropdown)",
-            zIndex: 9999,
-            pointerEvents: "none",
-            whiteSpace: "nowrap",
-          }}
-          className="
-            px-2.5 py-1.5
-            rounded-lg
-            text-xs font-medium
-            border border-border-toolbar
-            animate-fade-in
-          "
-        >
-          {/* Tooltip text */}
-          {label}
-
-          {/* Arrow pointer */}
+      {isVisible &&
+        label &&
+        createPortal(
           <div
-            aria-hidden="true"
+            role="tooltip"
+            aria-live="polite"
             style={{
-              position: "absolute",
-              width: 0,
-              height: 0,
-              borderWidth: "5px",
-              borderStyle: "solid",
-              ...arrowStyles[position],
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              transform: "translate(-50%, calc(-100% - 8px))",
             }}
-          />
-        </div>
-      )}
+            className="fixed bg-dropdown text-text-primary shadow-md z-100000 pointer-events-none whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border-toolbar"
+          >
+            {label}
+            <div
+              aria-hidden="true"
+              className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-dropdown"
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

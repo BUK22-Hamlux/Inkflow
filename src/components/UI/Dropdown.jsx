@@ -47,7 +47,6 @@ const Dropdown = ({
     }
   }, [isOpen, openDropdown, closeDropdown]);
 
-  // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
 
@@ -63,7 +62,6 @@ const Dropdown = ({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen, closeDropdown]);
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
 
@@ -104,7 +102,6 @@ const Dropdown = ({
     };
   }, [isOpen, align]);
 
-  // Calculate width for the panel
   const panelWidth =
     width === "auto"
       ? "auto"
@@ -120,7 +117,6 @@ const Dropdown = ({
 
   return (
     <div ref={containerRef} className="relative inline-flex">
-      {/* Trigger — clone to inject ref, onClick, aria attrs */}
       {cloneElement(trigger, {
         ref: triggerRef,
         onClick: toggleDropdown,
@@ -136,18 +132,11 @@ const Dropdown = ({
             role="listbox"
             aria-orientation="vertical"
             style={{
-              position: "absolute",
               top: `${position.top}px`,
               left: leftOffset,
               width: panelWidth,
-              minWidth: "160px",
-              backgroundColor: "var(--bg-dropdown)",
-              boxShadow: "var(--shadow-modal)",
-              border: "1px solid var(--border-toolbar)",
-              borderRadius: "10px",
-              zIndex: 99999,
-              overflow: "hidden",
             }}
+            className="absolute min-w-40 bg-dropdown shadow-modal border border-border-toolbar rounded-[10px] z-99999 overflow-hidden"
             onClick={closeDropdown}
           >
             {children}

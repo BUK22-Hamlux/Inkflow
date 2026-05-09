@@ -8,15 +8,7 @@ import FontSizeSelector from "./FontSizeSelector";
 import ColorPicker from "./ColorPicker";
 import Divider from "../UI/Divider";
 import Dropdown from "../UI/Dropdown";
-
-const PARAGRAPH_STYLES = [
-  { label: "Normal Text", command: "paragraph", attrs: null },
-  { label: "Heading 1", command: "heading", attrs: { level: 1 } },
-  { label: "Heading 2", command: "heading", attrs: { level: 2 } },
-  { label: "Heading 3", command: "heading", attrs: { level: 3 } },
-  { label: "Blockquote", command: "blockquote", attrs: null },
-  { label: "Code Block", command: "codeBlock", attrs: null },
-];
+import ParagraphStyleSelector from "./ParagraphStyleSelector";
 
 const getActiveParagraphLabel = (editorState) => {
   if (editorState.isH1) return "Heading 1";
@@ -45,7 +37,7 @@ const Toolbar = () => {
           chain.redo().run();
           break;
         case "bold":
-          chain.toggleBold().run();
+          chain.toggleBold.toggleBold().run();
           break;
         case "italic":
           chain.toggleItalic().run();
@@ -169,7 +161,11 @@ const Toolbar = () => {
   const handleHighlightChange = useCallback(
     (color) => {
       if (!editor) return;
-      editor.chain().focus().setHighlight({ color }).run();
+      if (editor.isActive("highlight", { color })) {
+        editor.chain().focus().unsetHighlight().run();
+      } else {
+        editor.chain().focus().setHighlight({ color }).run();
+      }
     },
     [editor],
   );
@@ -212,110 +208,11 @@ const Toolbar = () => {
       role="toolbar"
       aria-orientation="horizontal"
     >
-      <Dropdown
-        trigger={
-          <button
-            type="button"
-            aria-label={`Paragraph style: ${getActiveParagraphLabel(editorState)}. Click to change`}
-            className="
-              h-8 px-3
-              flex items-center gap-1.5
-              rounded-md text-xs font-medium
-              text-text-primary
-              hover:bg-accent-secondary
-              transition-all duration-100
-              border border-transparent hover:border-border-input
-              min-w-32
-            "
-          >
-            <span className="truncate flex-1 text-left">
-              {getActiveParagraphLabel(editorState)}
-            </span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M2 4L6 8L10 4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        }
-        align="left"
-        width="180px"
-        disabled={!editor}
-      >
-        <div
-          role="listbox"
-          aria-label="Paragraph style options"
-          className="py-1"
-        >
-          {PARAGRAPH_STYLES.map((style) => {
-            const isSelected =
-              getActiveParagraphLabel(editorState) === style.label;
-            return (
-              <button
-                key={style.label}
-                role="option"
-                aria-selected={isSelected}
-                type="button"
-                onClick={() => handleParagraphStyle(style)}
-                className="
-                  w-full px-3 py-2
-                  text-left text-sm
-                  text-text-primary
-                  hover:bg-accent-secondary
-                  transition-colors duration-100
-                  flex items-center justify-between gap-2
-                "
-              >
-                <span
-                  style={{
-                    fontSize:
-                      style.label === "Heading 1"
-                        ? "18px"
-                        : style.label === "Heading 2"
-                          ? "15px"
-                          : style.label === "Heading 3"
-                            ? "13px"
-                            : "13px",
-                    fontWeight: style.label.startsWith("Heading")
-                      ? "600"
-                      : "400",
-                  }}
-                >
-                  {style.label}
-                </span>
-                {isSelected && (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 7L5.5 10.5L12 3.5"
-                      stroke="var(--accent-primary)"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </Dropdown>
-
+      <ParagraphStyleSelector
+        disable={false}
+        currentParagraphStyle={getActiveParagraphLabel(editorState)}
+        onParagraphStyleChange={handleParagraphStyle}
+      />
       <Divider />
 
       <FontFamilySelector
@@ -323,7 +220,7 @@ const Toolbar = () => {
         onFontChange={handleFontChange}
         disabled={!editor}
       />
-
+      <Divider />
       <FontSizeSelector
         currentSize={editorState.currentFontSize}
         onSizeChange={handleSizeChange}

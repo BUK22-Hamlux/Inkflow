@@ -102,28 +102,27 @@
   margin-bottom: 0;
 }
 
-/* ── Bold, italic, underline, strike ─────────────────────── */
 .ProseMirror strong {
   font-weight: 700;
-  color: var(--text-primary);
+  color: inherit;
 }
 
 .ProseMirror em {
   font-style: italic;
-  color: var(--text-primary);
+  color: inherit;
 }
 
 .ProseMirror u {
   text-decoration: underline;
   text-underline-offset: 3px;
+  color: inherit;
 }
 
 .ProseMirror s {
   text-decoration: line-through;
-  color: var(--text-muted);
+  color: inherit;
 }
 
-/* ── Superscript and Subscript ────────────────────────────── */
 .ProseMirror sup {
   font-size: 0.75em;
   vertical-align: super;

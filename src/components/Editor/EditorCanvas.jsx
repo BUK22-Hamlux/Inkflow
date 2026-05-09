@@ -11,9 +11,11 @@ import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import { useEditorContext } from "../../context/EditorContext";
 import { Extension } from "@tiptap/core";
+import { useEditorContext } from "../../context/EditorContext";
+import useEditorState from "../../hooks/useEditorState";
 
+// ── FontSize custom extension ─────────────────────────────────
 const FontSize = Extension.create({
   name: "fontSize",
   addOptions() {
@@ -41,19 +43,56 @@ const FontSize = Extension.create({
     return {
       setFontSize:
         (fontSize) =>
-        ({ chain }) => {
-          return chain().setMark("textStyle", { fontSize }).run();
-        },
+        ({ chain }) =>
+          chain().setMark("textStyle", { fontSize }).run(),
       unsetFontSize:
         () =>
-        ({ chain }) => {
-          return chain()
+        ({ chain }) =>
+          chain()
             .setMark("textStyle", { fontSize: null })
             .removeEmptyTextStyle()
-            .run();
-        },
+            .run(),
     };
   },
+});
+
+// ── Fix 1: Bold stripping color ───────────────────────────────
+// The root cause: when Bold matches a <strong> tag, ProseMirror
+// marks it as "consumed" and TextStyle never gets to read the
+// inline style on the same element — so color is lost.
+//
+// The fix from the official TipTap discussion (github #5912):
+// Extend TextStyle with higher priority and consuming:false
+// so it can parse style attributes even after Bold has
+// already matched the same element.
+const FixedTextStyle = TextStyle.extend({
+  // Higher priority than Bold (which defaults to 100)
+  // ensures TextStyle runs its parseHTML FIRST
+  priority: 1000,
+
+  parseHTML() {
+    return [
+      // Keep the original TextStyle parseHTML rules
+      ...(this.parent?.() ?? []),
+      {
+        // Also match ANY element that has a style attribute
+        // consuming: false means "don't stop other rules
+        // from also matching this element"
+        // This is what allows Bold AND TextStyle to both
+        // apply to the same <strong style="color:red"> element
+        tag: "[style]",
+        consuming: false,
+      },
+    ];
+  },
+});
+
+// ── Fix 2: Highlight bleeding into new text ───────────────────
+// inclusive: false means when cursor is at the END of a
+// highlighted range, new typed characters do NOT inherit
+// the highlight. Matches MS Word behaviour exactly.
+const NonInclusiveHighlight = Highlight.extend({
+  inclusive: false,
 });
 
 const EditorCanvas = () => {
@@ -72,19 +111,39 @@ const EditorCanvas = () => {
         underline: false,
         link: false,
       }),
-      TextStyle,
+
+      // FixedTextStyle MUST come before Color and FontFamily
+      // The priority:1000 and consuming:false fix the
+      // bold-strips-color bug permanently
+      FixedTextStyle,
+
       FontSize,
-      FontFamily.configure({ types: ["textStyle"] }),
-      Color.configure({ types: ["textStyle"] }),
+
+      FontFamily.configure({
+        types: ["textStyle"],
+      }),
+
+      Color.configure({
+        types: ["textStyle"],
+      }),
+
       Underline,
-      Highlight.configure({ multicolor: true }),
+
+      // NonInclusiveHighlight fixes highlight bleeding
+      // into new text when spacebar is pressed
+      NonInclusiveHighlight.configure({
+        multicolor: true,
+      }),
+
       TextAlign.configure({
         types: ["heading", "paragraph"],
         alignments: ["left", "center", "right", "justify"],
         defaultAlignment: "left",
       }),
+
       Subscript,
       Superscript,
+
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -92,13 +151,16 @@ const EditorCanvas = () => {
           target: "_blank",
         },
       }),
+
       Image.configure({
         inline: false,
         allowBase64: true,
         HTMLAttributes: { class: "editor-image" },
       }),
     ],
+
     content: initialContent ?? "<p></p>",
+
     editorProps: {
       attributes: {
         class: "ProseMirror",
@@ -109,27 +171,31 @@ const EditorCanvas = () => {
         spellcheck: "true",
       },
     },
+
     autofocus: "end",
   });
 
+  const editorState = useEditorState(editor);
+
   useEffect(() => {
-    if (editor) {
-      setEditor(editor);
+    if (process.env.NODE_ENV === "development") {
+      console.log("Editor State:", editorState);
     }
+  }, [editorState]);
+
+  useEffect(() => {
+    if (editor) setEditor(editor);
   }, [editor, setEditor]);
 
   useEffect(() => {
-    if (!editor) return;
-    if (!initialContent) return;
+    if (!editor || !initialContent) return;
     editor.commands.setContent(initialContent);
     editor.commands.focus("end");
   }, [editor, initialContent]);
 
   useEffect(() => {
     return () => {
-      if (editor) {
-        editor.destroy();
-      }
+      if (editor) editor.destroy();
     };
   }, [editor]);
 
