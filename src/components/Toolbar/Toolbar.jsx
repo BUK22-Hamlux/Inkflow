@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import toolbarConfig from "../../config/toolbarConfig";
 import { useEditorContext } from "../../context/EditorContext";
 import useEditorState from "../../hooks/useEditorState";
+import useImageActions from "../../hooks/useImageActions";
 import ToolbarButton from "./ToolbarButton";
 import FontFamilySelector from "./FontFamilySelector";
 import FontSizeSelector from "./FontSizeSelector";
@@ -22,6 +23,19 @@ const getActiveParagraphLabel = (editorState) => {
 const Toolbar = () => {
   const { editor } = useEditorContext();
   const editorState = useEditorState(editor);
+  const imageActions = useImageActions(editor);
+
+  const handleLinkInsert = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes("link").href ?? "";
+    const url = window.prompt("Enter URL:", previousUrl);
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    editor.chain().focus().setLink({ href: url }).run();
+  }, [editor]);
 
   const handleCommand = useCallback(
     (action) => {
@@ -37,7 +51,7 @@ const Toolbar = () => {
           chain.redo().run();
           break;
         case "bold":
-          chain.toggleBold.toggleBold().run();
+          chain.toggleBold().run();
           break;
         case "italic":
           chain.toggleItalic().run();
@@ -76,7 +90,7 @@ const Toolbar = () => {
           handleLinkInsert();
           break;
         case "image":
-          handleImageInsert();
+          imageActions.insertImageFromUrl();
           break;
         case "horizontalRule":
           chain.setHorizontalRule().run();
@@ -88,27 +102,8 @@ const Toolbar = () => {
           console.warn(`Unknown toolbar action: ${action}`);
       }
     },
-    [editor],
+    [editor, handleLinkInsert, imageActions],
   );
-
-  const handleLinkInsert = () => {
-    if (!editor) return;
-    const previousUrl = editor.getAttributes("link").href ?? "";
-    const url = window.prompt("Enter URL:", previousUrl);
-    if (url === null) return;
-    if (url === "") {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
-    editor.chain().focus().setLink({ href: url }).run();
-  };
-
-  const handleImageInsert = () => {
-    if (!editor) return;
-    const url = window.prompt("Enter image URL:");
-    if (!url) return;
-    editor.chain().focus().setImage({ src: url }).run();
-  };
 
   const handleParagraphStyle = useCallback(
     (style) => {
@@ -153,6 +148,10 @@ const Toolbar = () => {
   const handleTextColorChange = useCallback(
     (color) => {
       if (!editor) return;
+      if (!color) {
+        editor.chain().focus().unSetColor(color).run();
+        return;
+      }
       editor.chain().focus().setColor(color).run();
     },
     [editor],
@@ -161,6 +160,10 @@ const Toolbar = () => {
   const handleHighlightChange = useCallback(
     (color) => {
       if (!editor) return;
+      if (!color) {
+        editor.chain().focus().unSetHighlight(color).run();
+        return;
+      }
       if (editor.isActive("highlight", { color })) {
         editor.chain().focus().unsetHighlight().run();
       } else {

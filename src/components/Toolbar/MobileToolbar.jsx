@@ -1,75 +1,16 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useEditorContext } from "../../context/EditorContext";
 import useEditorState from "../../hooks/useEditorState";
+import useImageActions from "../../hooks/useImageActions";
 import MobileToolbarSheet from "./MobileToolbarSheet";
-import {
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Undo2,
-  Redo2,
-  AlignLeft,
-  AlignCenter,
-  Highlighter,
-  MoreHorizontal,
-} from "lucide-react";
+import ToolbarButton from "./ToolbarButton";
+import FontFamilySelector from "./FontFamilySelector";
+import FontSizeSelector from "./FontSizeSelector";
+import { MoreHorizontal } from "lucide-react";
 
-// The most essential tools shown in the scrollable row
 const ESSENTIAL_TOOLS = [
-  { id: "undo", icon: Undo2, label: "Undo", action: "undo" },
-  { id: "redo", icon: Redo2, label: "Redo", action: "redo" },
-  { id: "bold", icon: Bold, label: "Bold", action: "bold", isToggle: true },
-  {
-    id: "italic",
-    icon: Italic,
-    label: "Italic",
-    action: "italic",
-    isToggle: true,
-  },
-  {
-    id: "underline",
-    icon: Underline,
-    label: "Underline",
-    action: "underline",
-    isToggle: true,
-  },
-  {
-    id: "highlight",
-    icon: Highlighter,
-    label: "Highlight",
-    action: "highlight",
-    isToggle: true,
-  },
-  {
-    id: "bulletList",
-    icon: List,
-    label: "Bullet List",
-    action: "bulletList",
-    isToggle: true,
-  },
-  {
-    id: "orderedList",
-    icon: ListOrdered,
-    label: "Numbered",
-    action: "orderedList",
-    isToggle: true,
-  },
-  {
-    id: "alignLeft",
-    icon: AlignLeft,
-    label: "Left",
-    action: "alignLeft",
-    isToggle: true,
-  },
-  {
-    id: "alignCenter",
-    icon: AlignCenter,
-    label: "Center",
-    action: "alignCenter",
-    isToggle: true,
-  },
+  { id: "undo", icon: "Undo", label: "Undo", action: "undo" },
+  { id: "redo", icon: "Redo", label: "Redo", action: "redo" },
 ];
 
 const ACTIVE_STATE_MAP = {
@@ -92,6 +33,7 @@ const ACTIVE_STATE_MAP = {
 const MobileToolbar = () => {
   const { editor } = useEditorContext();
   const editorState = useEditorState(editor);
+  const imageActions = useImageActions(editor);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleCommand = (action) => {
@@ -117,9 +59,13 @@ const MobileToolbar = () => {
       case "strike":
         chain.toggleStrike().run();
         break;
-      case "highlight":
-        chain.toggleHighlight({ color: "#fef08a" }).run();
+      case "subscript":
+        chain.toggleSubscript().run();
         break;
+      case "superscript":
+        chain.toggleSuperscript().run();
+        break;
+
       case "bulletList":
         chain.toggleBulletList().run();
         break;
@@ -138,12 +84,34 @@ const MobileToolbar = () => {
       case "alignJustify":
         chain.setTextAlign("justify").run();
         break;
+      case "link":
+        handleLinkInsert();
+        break;
+      case "image":
+        imageActions.insertImageFromUrl();
+        break;
+      case "horizontalRule":
+        chain.setHorizontalRule().run();
+        break;
+      case "highlight":
       case "clearFormatting":
         chain.clearNodes().unsetAllMarks().run();
         break;
       default:
         break;
     }
+  };
+
+  const handleLinkInsert = () => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes("link").href ?? "";
+    const url = window.prompt("Enter URL:", previousUrl);
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    editor.chain().focus().setLink({ href: url }).run();
   };
 
   const getIsActive = (tool) => {
@@ -159,6 +127,22 @@ const MobileToolbar = () => {
     return false;
   };
 
+  const handleFontChange = useCallback(
+    (fontValue) => {
+      if (!editor) return;
+      editor.chain().focus().setFontFamily(fontValue).run();
+    },
+    [editor],
+  );
+
+  const handleSizeChange = useCallback(
+    (size) => {
+      if (!editor) return;
+      editor.chain().focus().setFontSize(`${size}px`).run();
+    },
+    [editor],
+  );
+
   return (
     <>
       <nav
@@ -167,22 +151,31 @@ const MobileToolbar = () => {
         role="toolbar"
         aria-orientation="horizontal"
       >
-        {/* Scrollable tool row */}
         <div
           className="flex items-center h-full gap-1 px-2"
           style={{
             overflowX: "auto",
             overflowY: "visible",
-            scrollbarWidth: "none", // Firefox
-            msOverflowStyle: "none", // IE/Edge legacy
-            WebkitOverflowScrolling: "touch", // iOS momentum scroll
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
           }}
           aria-label="Essential formatting tools"
         >
-          {/* Hide scrollbar on webkit */}
           <style>{`
             .mobile-toolbar-scroll::-webkit-scrollbar { display: none; }
           `}</style>
+
+          <FontFamilySelector
+            currentFont={editorState.currentFontFamily}
+            disabled={!editor}
+            onFontChange={handleFontChange}
+          />
+          <FontSizeSelector
+            currentSize={editorState.currentFontSize}
+            disabled={!editor}
+            onSizeChange={handleSizeChange}
+          />
 
           {ESSENTIAL_TOOLS.map((tool) => {
             const Icon = tool.icon;
@@ -190,25 +183,15 @@ const MobileToolbar = () => {
             const isDisabled = getIsDisabled(tool);
 
             return (
-              <button
+              <ToolbarButton
                 key={tool.id}
-                type="button"
+                icon={tool.icon}
+                label={tool.label}
+                isActive={isActive}
                 onClick={() => handleCommand(tool.action)}
                 disabled={isDisabled}
-                aria-label={tool.label}
-                aria-pressed={tool.isToggle ? isActive : undefined}
-                aria-disabled={isDisabled}
-                className={`
-                  toolbar-btn shrink-0
-                  ${isActive ? "active" : ""}
-                `}
-              >
-                <Icon
-                  size={18}
-                  aria-hidden="true"
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
-              </button>
+                size={15}
+              />
             );
           })}
 
@@ -218,13 +201,7 @@ const MobileToolbar = () => {
             aria-label="Show all formatting options"
             aria-expanded={isSheetOpen}
             aria-haspopup="dialog"
-            className="
-              toolbar-btn shrink-0 ml-1
-              flex items-center gap-1
-              min-w-max px-2
-              text-xs font-medium
-              text-text-secondary
-            "
+            className=" toolbar-btn shrink-0 ml-1 flex items-center gap-1 min-w-max px-2 text-xs font-medium text-text-secondary"
           >
             <MoreHorizontal size={16} aria-hidden="true" />
             <span className="text-[11px]">More</span>

@@ -14,6 +14,7 @@ const FontFamilySelector = ({
     const found = fonts.find((f) => f.value === currentFont);
     return found ? found.label : "Default";
   };
+  const sortedFonts = [...fonts].sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <Dropdown
@@ -57,7 +58,7 @@ const FontFamilySelector = ({
         aria-label="Font family options"
         className="py-1 max-h-72 overflow-y-auto custom-scrollbar"
       >
-        {fonts.map((font) => (
+        {sortedFonts.map((font) => (
           <button
             key={font.value}
             role="option"

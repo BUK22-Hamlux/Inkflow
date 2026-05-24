@@ -1,6 +1,7 @@
 import { ThemeProvider } from "./context/ThemeContext";
 import { EditorProvider, useEditorContext } from "./context/EditorContext";
-import { Toaster } from "react-hot-toast";
+import { DialogProvider } from "./context/DialogProvider";
+import AppToaster from "./components/UI/AppToaster";
 import WelcomePage from "./pages/WelcomePage";
 import EditorPage from "./pages/EditorPage";
 
@@ -9,7 +10,7 @@ const AppContent = () => {
 
   return (
     <>
-      <Toaster />
+      <AppToaster />
       {appState === "welcome" && <WelcomePage />}
       {appState === "editing" && <EditorPage />}
       {appState === "focusMode" && <EditorPage />}
@@ -20,9 +21,11 @@ const AppContent = () => {
 const App = () => {
   return (
     <ThemeProvider>
-      <EditorProvider>
-        <AppContent />
-      </EditorProvider>
+      <DialogProvider>
+        <EditorProvider>
+          <AppContent />
+        </EditorProvider>
+      </DialogProvider>
     </ThemeProvider>
   );
 };

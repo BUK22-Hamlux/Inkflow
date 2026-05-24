@@ -1,29 +1,39 @@
 import EditorLayout from "../layouts/EditorLayout";
 import EditorCanvas from "../components/Editor/EditorCanvas";
 import Toolbar from "../components/Toolbar/Toolbar";
-import MenuBar from "../components/MenuBar/MenuBar";
 import MobileToolbar from "../components/Toolbar/MobileToolbar";
+import MenuBar from "../components/MenuBar/MenuBar";
+import TableToolbar from "../components/Toolbar/TableToolbar";
+import ImageToolbar from "../components/Toolbar/ImageToolbar";
+import { useEditorContext } from "../context/EditorContext";
 import useWindowSize from "../hooks/useWindowSize";
-import { Toaster } from "react-hot-toast";
+import useEditorState from "../hooks/useEditorState";
 
 const EditorPage = () => {
   const { isMobile } = useWindowSize();
+  const { editor } = useEditorContext();
+  const editorState = useEditorState(editor);
+  const isInsideTable = editorState?.isInTable ?? false;
+  const isImageSelected = editorState?.isImage ?? false;
 
   return (
-    <>
-      <Toaster />
-      <EditorLayout
-        menuBar={<MenuBar />}
-        toolbar={isMobile ? <MobileToolbar /> : <Toolbar />}
-        sidebar={null}
-        canvas={<EditorCanvas />}
-        statusBar={
-          <div className="h-full flex items-center px-4 text-text-secondary text-xs">
-            Words: 0 | Characters: 0
-          </div>
-        }
-      />
-    </>
+    <EditorLayout
+      menuBar={<MenuBar />}
+      toolbar={
+        <div className="flex flex-col w-full h-full">
+          {isMobile ? <MobileToolbar /> : <Toolbar />}
+          {isInsideTable && <TableToolbar />}
+          {isImageSelected && <ImageToolbar />}
+        </div>
+      }
+      sidebar={null}
+      canvas={<EditorCanvas />}
+      statusBar={
+        <div className="h-full flex items-center px-4 text-xs text-text-secondary">
+          Words: 0 | Characters: 0
+        </div>
+      }
+    />
   );
 };
 

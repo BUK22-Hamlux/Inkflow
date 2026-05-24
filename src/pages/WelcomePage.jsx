@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useEditorContext } from "../context/EditorContext";
 import { Upload } from "lucide-react";
-import { Toaster } from "react-hot-toast";
 import useDropZone from "../hooks/useDropZone";
 import {
   getAllDocuments,
@@ -55,7 +54,7 @@ const WelcomePage = () => {
     };
 
     saveDocument(newDoc);
-    openExistingDocument(newDoc);
+    openExistingDocument(newDoc, { showToast: false });
   };
 
   const handleOpenDocument = (doc) => {
@@ -81,8 +80,6 @@ const WelcomePage = () => {
 
   return (
     <>
-      <Toaster />
-
       <div
         className={`
           min-h-screen flex flex-col items-center justify-center

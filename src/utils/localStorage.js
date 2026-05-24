@@ -86,3 +86,30 @@ export const getStorageUsage = () => {
     };
   }
 };
+
+const MAX_RECENT_COLORS = 5;
+
+const RECENT_COLORS_KEY = "inkflow_recent_colors";
+
+export const getRecentColors = () => {
+  try {
+    const saved = localStorage.getItem(RECENT_COLORS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addRecentColor = (hex) => {
+  try {
+    const current = getRecentColors();
+    const filtered = current.filter(
+      (c) => c.toLowerCase() !== hex.toLowerCase(),
+    );
+    const updated = [hex, ...filtered].slice(0, MAX_RECENT_COLORS);
+    localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+};

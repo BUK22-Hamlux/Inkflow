@@ -2,15 +2,53 @@
 .editor-canvas {
   width: 100%;
   max-width: 794px;
-  min-height: 1056px;
-  background-color: var(--bg-editor);
-  box-shadow: var(--shadow-editor);
-  border-radius: 4px;
+  min-height: var(--inkflow-document-height, 1056px);
+  position: relative;
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 0;
   margin: 40px auto;
-  padding: 96px;
   transition:
     background-color var(--transition-theme),
     box-shadow var(--transition-theme);
+}
+
+.editor-page-stack {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.editor-page {
+  position: relative;
+  width: 100%;
+  height: 1056px;
+  flex: 0 0 1056px;
+  background-color: var(--bg-editor);
+  box-shadow: var(--shadow-editor);
+  border-radius: 4px;
+}
+
+.editor-page + .editor-page {
+  border-top: 1px solid var(--border-toolbar);
+}
+
+.editor-page-number {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.editor-content-layer {
+  position: relative;
+  z-index: 1;
+  min-height: var(--inkflow-document-height, 1056px);
 }
 
 @media (max-width: 768px) {
@@ -19,9 +57,17 @@
     max-width: 100%;
     min-height: 100vh;
     margin: 0;
-    padding: 24px 20px;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .editor-page-stack {
+    display: none;
+  }
+
+  .editor-content-layer {
+    min-height: 100vh;
+    background-color: var(--bg-editor);
   }
 }
 
@@ -33,10 +79,18 @@
   line-height: 1.8;
   color: var(--text-primary);
   caret-color: var(--accent-primary);
-  min-height: 600px;
+  min-height: var(--inkflow-document-height, 1056px);
+  padding: 96px;
   word-wrap: break-word;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 768px) {
+  .ProseMirror {
+    min-height: 100vh;
+    padding: 24px 20px;
+  }
 }
 
 /* ── Placeholder text ─────────────────────────────────────── */
@@ -234,9 +288,91 @@
   display: block;
 }
 
+.ProseMirror img[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.ProseMirror img[data-align="center"] {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ProseMirror img[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+}
+
 .ProseMirror img.ProseMirror-selectednode {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+.ProseMirror [data-resize-container][data-node="image"].ProseMirror-selectednode
+  [data-resize-wrapper] {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.ProseMirror [data-resize-container][data-node="image"] {
+  max-width: 100%;
+  margin: 0.75rem 0;
+}
+
+.ProseMirror [data-resize-container][data-node="image"]:has(img[data-align="center"]) {
+  justify-content: center;
+}
+
+.ProseMirror [data-resize-container][data-node="image"]:has(img[data-align="right"]) {
+  justify-content: flex-end;
+}
+
+.ProseMirror [data-resize-wrapper] img {
+  margin: 0;
+}
+
+.ProseMirror [data-resize-handle] {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent-primary);
+  background: var(--bg-editor);
+  border-radius: 999px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 2;
+}
+
+.ProseMirror [data-resize-container][data-node="image"]:hover [data-resize-handle],
+.ProseMirror [data-resize-container][data-node="image"][data-resize-state="true"]
+  [data-resize-handle] {
+  opacity: 1;
+}
+
+.ProseMirror [data-resize-handle="top-left"],
+.ProseMirror [data-resize-handle="bottom-right"] {
+  cursor: nwse-resize;
+}
+
+.ProseMirror [data-resize-handle="top-right"],
+.ProseMirror [data-resize-handle="bottom-left"] {
+  cursor: nesw-resize;
+}
+
+.inkflow-drag-grip {
+  width: 18px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: var(--bg-toolbar);
+  border: 1px solid var(--border-toolbar);
+  box-shadow: var(--shadow-toolbar);
+  cursor: grab;
+  font-size: 13px;
+  line-height: 1;
 }
 
 /* ── Text alignment ───────────────────────────────────────── */
@@ -289,4 +425,69 @@
 
 .ProseMirror.ProseMirror-focused .ProseMirror-gapcursor {
   display: block;
+}
+/* ── Table styles ─────────────────────────────────────────── */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  min-width: 50px;
+  border: 1px solid var(--border-input);
+  padding: 8px 12px;
+  vertical-align: top;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ProseMirror table th {
+  background-color: var(--accent-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.ProseMirror table td {
+  background-color: var(--bg-editor);
+  color: var(--text-primary);
+}
+
+/* Selected cells */
+.ProseMirror table .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent-secondary);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Column resize handle */
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--accent-primary);
+  pointer-events: none;
+  cursor: col-resize;
+}
+
+/* Resize cursor while dragging */
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+}
+
+/* Table wrapper — handles overflow */
+.tableWrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
 }

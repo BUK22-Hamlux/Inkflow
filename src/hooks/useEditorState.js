@@ -9,6 +9,7 @@ const DEFAULT_STATE = {
   isSuperscript: false,
   isHighlight: false,
   isLink: false,
+  isImage: false,
 
   isH1: false,
   isH2: false,
@@ -31,6 +32,8 @@ const DEFAULT_STATE = {
 
   canUndo: false,
   canRedo: false,
+
+  imageAttrs: null,
 };
 
 const useEditorState = (editor) => {
@@ -48,6 +51,9 @@ const useEditorState = (editor) => {
       isSuperscript: editor.isActive("superscript"),
       isHighlight: editor.isActive("highlight"),
       isLink: editor.isActive("link"),
+      isImage: editor.isActive("image"),
+
+      isInTable: editor.isActive("table"),
 
       isH1: editor.isActive("heading", { level: 1 }),
       isH2: editor.isActive("heading", { level: 2 }),
@@ -72,6 +78,10 @@ const useEditorState = (editor) => {
 
       canUndo: editor.can().undo(),
       canRedo: editor.can().redo(),
+
+      imageAttrs: editor.isActive("image")
+        ? editor.getAttributes("image")
+        : null,
     });
   }, [editor]);
 

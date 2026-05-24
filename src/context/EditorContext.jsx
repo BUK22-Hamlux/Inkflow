@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import toast from "react-hot-toast";
 import { generateDocId, saveDocument } from "../utils/localStorage";
 
 const EditorContext = createContext(null);
@@ -33,18 +34,30 @@ export const EditorProvider = ({ children }) => {
       createdAt: new Date().toISOString(),
       lastEditedAt: new Date().toISOString(),
     };
-    saveDocument(newDoc);
+    const saved = saveDocument(newDoc);
     setCurrentDocId(id);
     setCurrentTitle("Untitled Document");
     setInitialContent(null);
     setAppState("editing");
+
+    if (saved) {
+      toast.success("New document created");
+    } else {
+      toast.error("Document created, but it could not be saved locally.");
+    }
   };
 
-  const openExistingDocument = (doc) => {
+  const openExistingDocument = (doc, options = {}) => {
+    const { showToast = true } = options;
+
     setCurrentDocId(doc.id);
     setCurrentTitle(doc.title || "Untitled Document");
     setInitialContent(doc.content ?? null);
     setAppState("editing");
+
+    if (showToast) {
+      toast.success(`"${doc.title || "Untitled Document"}" opened`);
+    }
   };
 
   const returnToWelcome = () => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({
-    width:  window.innerWidth,
+    width: window.innerWidth,
     height: window.innerHeight,
   });
 
@@ -10,12 +10,10 @@ const useWindowSize = () => {
     let timeoutId = null;
 
     const handleResize = () => {
-      // Debounce — only update after user stops resizing for 100ms
-      // Prevents excessive re-renders during window drag
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         setWindowSize({
-          width:  window.innerWidth,
+          width: window.innerWidth,
           height: window.innerHeight,
         });
       }, 100);
@@ -30,8 +28,8 @@ const useWindowSize = () => {
   }, []);
 
   return {
-    width:    windowSize.width,
-    height:   windowSize.height,
+    width: windowSize.width,
+    height: windowSize.height,
     isMobile: windowSize.width < 768,
     isTablet: windowSize.width >= 768 && windowSize.width < 1200,
     isDesktop: windowSize.width >= 1200,
