@@ -20,6 +20,7 @@ const useMenuActions = () => {
     currentDocId,
     currentTitle,
     editor,
+    pageSettings,
     openNewDocument,
     enterFocusMode,
     setIsSidebarOpen,
@@ -102,6 +103,7 @@ const useMenuActions = () => {
       id: currentDocId,
       title: currentTitle,
       content,
+      pageSettings,
       wordCount,
       preview: plainText.slice(0, 120),
       lastEditedAt: new Date().toISOString(),
@@ -119,7 +121,7 @@ const useMenuActions = () => {
         fontSize: "13px",
       },
     });
-  }, [editor, currentDocId, currentTitle, closeMenu]);
+  }, [editor, currentDocId, currentTitle, pageSettings, closeMenu]);
 
   const openExportModal = useCallback(() => {
     closeMenu();

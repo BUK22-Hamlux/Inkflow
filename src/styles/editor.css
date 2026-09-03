@@ -1,7 +1,8 @@
 /* ── Editor wrapper ───────────────────────────────────────── */
 .editor-canvas {
   width: 100%;
-  max-width: 794px;
+  max-width: var(--inkflow-page-width, 794px);
+  height: var(--inkflow-document-height, 1056px);
   min-height: var(--inkflow-document-height, 1056px);
   position: relative;
   background-color: transparent;
@@ -18,6 +19,7 @@
   inset: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--inkflow-page-gap, 28px);
   pointer-events: none;
   z-index: 0;
 }
@@ -25,15 +27,11 @@
 .editor-page {
   position: relative;
   width: 100%;
-  height: 1056px;
-  flex: 0 0 1056px;
+  height: var(--inkflow-page-height, 1056px);
+  flex: 0 0 var(--inkflow-page-height, 1056px);
   background-color: var(--bg-editor);
   box-shadow: var(--shadow-editor);
   border-radius: 4px;
-}
-
-.editor-page + .editor-page {
-  border-top: 1px solid var(--border-toolbar);
 }
 
 .editor-page-number {
@@ -49,12 +47,14 @@
   position: relative;
   z-index: 1;
   min-height: var(--inkflow-document-height, 1056px);
+  height: var(--inkflow-document-height, 1056px);
 }
 
 @media (max-width: 768px) {
   .editor-canvas {
     width: 100%;
     max-width: 100%;
+    height: auto;
     min-height: 100vh;
     margin: 0;
     border-radius: 0;
@@ -66,6 +66,7 @@
   }
 
   .editor-content-layer {
+    height: auto;
     min-height: 100vh;
     background-color: var(--bg-editor);
   }
@@ -77,10 +78,12 @@
   font-family: "Inter", "Plus Jakarta Sans", sans-serif;
   font-size: 14px;
   line-height: 1.8;
+  line-height: var(--inkflow-line-height, 1.8);
   color: var(--text-primary);
   caret-color: var(--accent-primary);
   min-height: var(--inkflow-document-height, 1056px);
-  padding: 96px;
+  padding: var(--inkflow-margin-top, 96px) var(--inkflow-margin-right, 96px)
+    var(--inkflow-margin-bottom, 96px) var(--inkflow-margin-left, 96px);
   word-wrap: break-word;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
@@ -148,7 +151,7 @@
 
 /* ── Paragraphs ───────────────────────────────────────────── */
 .ProseMirror p {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 var(--inkflow-paragraph-spacing, 12px) 0;
   color: var(--text-primary);
 }
 
@@ -264,6 +267,29 @@
   border: none;
   border-top: 2px solid var(--border-toolbar);
   margin: 1.5rem 0;
+}
+
+.ProseMirror .inkflow-page-break,
+.ProseMirror hr[data-inkflow-page-break] {
+  border: none;
+  border-top: 1px dashed var(--border-toolbar);
+  height: 0;
+  margin: 1rem 0;
+  background: transparent;
+  page-break-after: always;
+}
+
+.ProseMirror .inkflow-page-spacer {
+  display: block;
+  width: auto;
+  height: var(--inkflow-page-spacer-height, 220px);
+  margin: 0 calc(-1 * var(--inkflow-margin-right, 96px)) 0
+    calc(-1 * var(--inkflow-margin-left, 96px));
+  padding: 0;
+  border: 0;
+  pointer-events: none;
+  user-select: none;
+  line-height: 0;
 }
 
 /* ── Links ────────────────────────────────────────────────── */
@@ -490,4 +516,46 @@
 .tableWrapper {
   overflow-x: auto;
   margin: 1rem 0;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.contextual-toolbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.contextual-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .contextual-toolbar {
+    min-height: 36px;
+    padding-inline: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .contextual-toolbar button {
+    min-width: 36px;
+  }
+
+  .ProseMirror .tableWrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .ProseMirror table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .ProseMirror table td,
+  .ProseMirror table th {
+    min-width: 96px;
+    padding: 8px;
+  }
 }

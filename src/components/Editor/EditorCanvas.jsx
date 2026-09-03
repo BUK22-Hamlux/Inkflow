@@ -17,11 +17,13 @@ import {
   TableCell,
   TableHeader,
 } from "@tiptap/extension-table";
-import { Extension, ResizableNodeView } from "@tiptap/core";
+import { Extension, Node, ResizableNodeView } from "@tiptap/core";
 import DragHandle from "@tiptap/extension-drag-handle";
 import Dropcursor from "@tiptap/extension-dropcursor";
 import { useEditorContext } from "../../context/EditorContext";
 import useEditorState from "../../hooks/useEditorState";
+import useWindowSize from "../../hooks/useWindowSize";
+import { AutoPagination } from "../../extensions/autoPagination";
 
 // ── MODERN COMPACT FONT SIZE EXTENSION ──────────────────────────
 const FontSize = Extension.create({
@@ -54,6 +56,33 @@ const FontSize = Extension.create({
         () =>
         ({ chain }) =>
           chain().setMark("textStyle", { fontSize: null }).run(),
+    };
+  },
+});
+
+const PageBreak = Node.create({
+  name: "pageBreak",
+  group: "block",
+  atom: true,
+  selectable: false,
+
+  parseHTML() {
+    return [{ tag: "hr[data-inkflow-page-break]" }];
+  },
+
+  renderHTML() {
+    return [
+      "hr",
+      { "data-inkflow-page-break": "true", class: "inkflow-page-break" },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setPageBreak:
+        () =>
+        ({ commands }) =>
+          commands.insertContent({ type: this.name }),
     };
   },
 });
@@ -149,12 +178,16 @@ const ResizableImage = Image.extend({
 });
 
 const EditorCanvas = () => {
-  const { initialContent, setEditor } = useEditorContext();
+  const { initialContent, pageSettings, setEditor } = useEditorContext();
+  const { isMobile } = useWindowSize();
   const canvasRef = useRef(null);
   const [pageCount, setPageCount] = useState(1);
 
   const editor = useEditor({
     extensions: [
+      PageBreak,
+      AutoPagination,
+
       StarterKit.configure({
         history: { depth: 100, newGroupDelay: 500 },
         heading: { levels: [1, 2, 3, 4] },
@@ -232,7 +265,7 @@ const EditorCanvas = () => {
 
     editorProps: {
       attributes: {
-        class: "ProseMirror outline-none min-h-[inherit] ",
+        class: "ProseMirror outline-none",
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": "Document editor. Start typing your document here.",
@@ -268,40 +301,37 @@ const EditorCanvas = () => {
   }, [editor, initialContent]);
 
   useEffect(() => {
-    if (!editor || !canvasRef.current) return;
+    if (!editor) return;
 
-    const pageHeight = 1056;
-    const measurePages = () => {
-      const editorElement = canvasRef.current?.querySelector(".ProseMirror");
-      if (!editorElement) return;
-
-      const nextPageCount = Math.max(
-        1,
-        Math.ceil(editorElement.scrollHeight / pageHeight),
-      );
-
-      setPageCount(nextPageCount);
-    };
-
-    measurePages();
-
-    const resizeObserver = new ResizeObserver(measurePages);
-    resizeObserver.observe(canvasRef.current);
-
-    const editorElement = canvasRef.current.querySelector(".ProseMirror");
-    if (editorElement) {
-      resizeObserver.observe(editorElement);
-    }
-
-    editor.on("transaction", measurePages);
-    editor.on("update", measurePages);
-
+    editor.storage.autoPagination.onPageCountChange = setPageCount;
     return () => {
-      resizeObserver.disconnect();
-      editor.off("transaction", measurePages);
-      editor.off("update", measurePages);
+      if (editor.storage.autoPagination) {
+        editor.storage.autoPagination.onPageCountChange = null;
+      }
     };
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    Object.assign(editor.storage.autoPagination, {
+      height: pageSettings.height,
+      marginTop: pageSettings.marginTop,
+      marginBottom: pageSettings.marginBottom,
+      pageGap: pageSettings.pageGap,
+      enabled: !isMobile,
+    });
+
+    editor.view.dispatch(
+      editor.state.tr
+        .setMeta("inkflowPaginationRefresh", true)
+        .setMeta("addToHistory", false),
+    );
+  }, [editor, pageSettings, isMobile]);
+
+  const documentHeight =
+    pageCount * pageSettings.height +
+    Math.max(0, pageCount - 1) * pageSettings.pageGap;
 
   if (!editor) {
     return (
@@ -326,7 +356,23 @@ const EditorCanvas = () => {
       ref={canvasRef}
       className="editor-canvas"
       aria-label="Document editor canvas"
-      style={{ "--inkflow-document-height": `${pageCount * 1056}px` }}
+      style={{
+        "--inkflow-page-width": `${pageSettings.width}px`,
+        "--inkflow-page-height": `${pageSettings.height}px`,
+        "--inkflow-document-height": `${documentHeight}px`,
+        "--inkflow-page-gap": `${pageSettings.pageGap}px`,
+        "--inkflow-page-spacer-height": `${
+          pageSettings.marginBottom +
+          pageSettings.pageGap +
+          pageSettings.marginTop
+        }px`,
+        "--inkflow-margin-top": `${pageSettings.marginTop}px`,
+        "--inkflow-margin-right": `${pageSettings.marginRight}px`,
+        "--inkflow-margin-bottom": `${pageSettings.marginBottom}px`,
+        "--inkflow-margin-left": `${pageSettings.marginLeft}px`,
+        "--inkflow-line-height": pageSettings.lineHeight,
+        "--inkflow-paragraph-spacing": `${pageSettings.paragraphSpacing}px`,
+      }}
     >
       <div className="editor-page-stack" aria-hidden="true">
         {Array.from({ length: pageCount }, (_, index) => (

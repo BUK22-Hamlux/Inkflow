@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 const MAX_ROWS = 10;
 const MAX_COLS = 10;
+const PANEL_WIDTH = 256;
 
 const TablePicker = ({ onInsert, onOpen, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +20,11 @@ const TablePicker = ({ onInsert, onOpen, disabled = false }) => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setPanelPos({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 6,
+        left: Math.max(
+          8,
+          Math.min(rect.left, window.innerWidth - PANEL_WIDTH - 8),
+        ),
       });
     }
     setIsOpen(true);
@@ -107,7 +111,7 @@ const TablePicker = ({ onInsert, onOpen, disabled = false }) => {
             ref={panelRef}
             role="dialog"
             aria-label="Table size picker"
-            className="fixed z-99999 bg-modal border border-border-toolbar rounded-xl shadow-modal p-3"
+            className="fixed z-99999 w-[min(256px,calc(100vw-16px))] bg-modal border border-border-toolbar rounded-xl shadow-modal p-3"
             style={{ top: panelPos.top, left: panelPos.left }}
           >
             {/* Label showing current selection */}
@@ -120,7 +124,9 @@ const TablePicker = ({ onInsert, onOpen, disabled = false }) => {
             {/* Grid */}
             <div
               className="grid gap-0.5"
-              style={{ gridTemplateColumns: `repeat(${MAX_COLS}, 20px)` }}
+              style={{
+                gridTemplateColumns: `repeat(${MAX_COLS}, minmax(0, 1fr))`,
+              }}
               aria-label="Table size grid"
               role="group"
             >
@@ -141,7 +147,7 @@ const TablePicker = ({ onInsert, onOpen, disabled = false }) => {
                       onClick={() => handleInsert(row, col)}
                       aria-label={`Insert ${row} by ${col} table`}
                       className="
-                      w-5 h-5 rounded-sm
+                      aspect-square rounded-sm
                       border transition-all duration-75
                     "
                       style={{

@@ -13,6 +13,7 @@ const openDocx = async (file) => {
         "p[style-name='Heading 4'] => h4:fresh",
         "b => strong",
         "i => em",
+        "br[type='page'] => hr.inkflow-page-break:fresh",
       ],
     },
   );
