@@ -9,7 +9,6 @@ import {
   ArrowUpFromLine,
   ArrowDownFromLine,
   Merge,
-  Split,
   TableProperties,
 } from "lucide-react";
 import Divider from "../UI/Divider";
@@ -51,7 +50,7 @@ const TableToolbar = () => {
         w-full flex items-center gap-1 px-3 py-1
         bg-accent-secondary
         border-b border-border-toolbar
-        overflow-x-auto
+        overflow-x-auto contextual-toolbar
       "
       role="toolbar"
       aria-label="Table editing tools"

@@ -5,7 +5,7 @@ const EditorLayout = ({ menuBar, toolbar, sidebar, canvas, statusBar }) => {
         {menuBar}
       </header>
 
-      <nav className="h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-50">
+      <nav className="min-h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-50 overflow-visible">
         {toolbar}
       </nav>
 

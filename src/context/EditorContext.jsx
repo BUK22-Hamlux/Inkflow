@@ -83,6 +83,7 @@ export const EditorProvider = ({ children }) => {
     setCurrentTitle(doc.title || "Untitled Document");
     setInitialContent(doc.content ?? null);
     setPageSettings(doc.pageSettings ?? DEFAULT_PAGE_SETTINGS);
+    setPageSettings(doc.pageSettings ?? DEFAULT_PAGE_SETTINGS);
     setAppState("editing");
 
     if (showToast) {
@@ -95,6 +96,7 @@ export const EditorProvider = ({ children }) => {
     setCurrentDocId(null);
     setCurrentTitle("Untitled Document");
     setInitialContent(null);
+    setPageSettings(DEFAULT_PAGE_SETTINGS);
     setPageSettings(DEFAULT_PAGE_SETTINGS);
     setEditorInstance(null);
   };
@@ -110,6 +112,7 @@ export const EditorProvider = ({ children }) => {
     editor,
     isSidebarOpen,
     pageSettings,
+
     isExportModalOpen,
     isShortcutsModalOpen,
     isFindReplaceOpen,
@@ -119,6 +122,7 @@ export const EditorProvider = ({ children }) => {
     getEditor,
     updatePageSettings,
     resetPageSettings,
+
     openNewDocument,
     openExistingDocument,
     returnToWelcome,

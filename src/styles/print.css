@@ -20,14 +20,26 @@
     font-size: 12pt !important;
   }
 
+  .editor-page-stack,
+  .editor-page-number,
+  .inkflow-page-spacer {
+    display: none !important;
+  }
+
   .editor-canvas {
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     background-color: #ffffff !important;
+  }
+
+  .editor-content-layer {
+    height: auto !important;
     min-height: auto !important;
   }
 

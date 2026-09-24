@@ -66,6 +66,7 @@ const EditorCanvas = () => {
       StarterKit.configure({
         history: { depth: 100, newGroupDelay: 500 },
         heading: { levels: [1, 2, 3, 4] },
+        dropcursor: false, // Prevents duplicate dropcursor warning
       }),
 
       TextStyle,
@@ -74,7 +75,6 @@ const EditorCanvas = () => {
       Color.configure({ types: ["textStyle"] }),
       Underline,
 
-      // Modern extended marks
       Highlight.extend({ inclusive: false }).configure({ multicolor: true }),
 
       TextAlign.configure({
@@ -108,11 +108,10 @@ const EditorCanvas = () => {
       }),
 
       Dropcursor.configure({
-        color: "#3b82f6", // Customizes the drop horizontal indicator line color
-        width: 2, // Thicker drop destination indicator line (in px)
+        color: "#3b82f6",
+        width: 2,
       }),
 
-      // Modern Table Nodes
       Table.configure({
         resizable: true,
         handleWidth: 5,
@@ -128,7 +127,7 @@ const EditorCanvas = () => {
 
     editorProps: {
       attributes: {
-        class: "ProseMirror outline-none min-h-[inherit] ",
+        class: "ProseMirror outline-none",
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": "Document editor. Start typing your document here.",
@@ -148,16 +147,13 @@ const EditorCanvas = () => {
     }
   }, [editorState]);
 
-  // Unified Single effect layout to pass instance upwards
   useEffect(() => {
     if (!editor) return;
     setEditor(editor);
   }, [editor, setEditor]);
 
-  // Safe initial hydration handle
   useEffect(() => {
     if (!editor || !initialContent) return;
-    // Don't overwrite if content matches to avoid cursor jump fights
     if (editor.getHTML() !== initialContent) {
       editor.commands.setContent(initialContent, false);
     }
