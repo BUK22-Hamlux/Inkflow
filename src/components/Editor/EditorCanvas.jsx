@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import FontFamily from "@tiptap/extension-font-family";
@@ -10,16 +10,16 @@ import TextAlign from "@tiptap/extension-text-align";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
 import {
   Table,
   TableRow,
   TableCell,
   TableHeader,
 } from "@tiptap/extension-table";
-import { Extension, ResizableNodeView } from "@tiptap/core";
+import { Extension } from "@tiptap/core";
 import DragHandle from "@tiptap/extension-drag-handle";
 import Dropcursor from "@tiptap/extension-dropcursor";
+import { ImageResize } from "tiptap-extension-resize-image";
 import { useEditorContext } from "../../context/EditorContext";
 import useEditorState from "../../hooks/useEditorState";
 
@@ -58,100 +58,8 @@ const FontSize = Extension.create({
   },
 });
 
-const ResizableImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      align: {
-        default: "left",
-        parseHTML: (element) => element.getAttribute("data-align") || "left",
-        renderHTML: (attributes) => ({
-          "data-align": attributes.align || "left",
-        }),
-      },
-    };
-  },
-
-  addNodeView() {
-    if (!this.options.resize?.enabled || typeof document === "undefined") {
-      return null;
-    }
-
-    const { directions, minWidth, minHeight, alwaysPreserveAspectRatio } =
-      this.options.resize;
-
-    const applyImageAttributes = (element, attrs) => {
-      const nextAttrs = {
-        ...this.options.HTMLAttributes,
-        src: attrs.src,
-        alt: attrs.alt,
-        title: attrs.title,
-        "data-align": attrs.align || "left",
-      };
-
-      Object.entries(nextAttrs).forEach(([key, value]) => {
-        if (value == null || value === "") {
-          element.removeAttribute(key);
-        } else {
-          element.setAttribute(key, value);
-        }
-      });
-
-      if (attrs.width) {
-        element.style.width = `${attrs.width}px`;
-      }
-      if (attrs.height) {
-        element.style.height = `${attrs.height}px`;
-      }
-    };
-
-    return ({ node, getPos, editor }) => {
-      const element = document.createElement("img");
-      applyImageAttributes(element, node.attrs);
-
-      const nodeView = new ResizableNodeView({
-        element,
-        editor,
-        node,
-        getPos,
-        onResize: (width, height) => {
-          element.style.width = `${width}px`;
-          element.style.height = `${height}px`;
-        },
-        onCommit: (width, height) => {
-          const pos = getPos();
-          if (pos === undefined) return;
-
-          editor
-            .chain()
-            .setNodeSelection(pos)
-            .updateAttributes(this.name, { width, height })
-            .run();
-        },
-        onUpdate: (updatedNode) => {
-          if (updatedNode.type !== node.type) return false;
-          applyImageAttributes(element, updatedNode.attrs);
-          return true;
-        },
-        options: {
-          directions,
-          min: {
-            width: minWidth,
-            height: minHeight,
-          },
-          preserveAspectRatio: alwaysPreserveAspectRatio === true,
-        },
-      });
-
-      return nodeView;
-    };
-  },
-});
-
 const EditorCanvas = () => {
   const { initialContent, setEditor } = useEditorContext();
-  const canvasRef = useRef(null);
-  const [pageCount, setPageCount] = useState(1);
 
   const editor = useEditor({
     extensions: [
@@ -182,22 +90,10 @@ const EditorCanvas = () => {
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
 
-      ResizableImage.configure({
-        allowBase64: true,
+      ImageResize.configure({
+        inline: false,
         HTMLAttributes: {
           class: "inkflow-resizable-image max-w-full h-auto rounded-lg",
-        },
-        resize: {
-          enabled: true,
-          directions: [
-            "top-left",
-            "top-right",
-            "bottom-left",
-            "bottom-right",
-          ],
-          minWidth: 80,
-          minHeight: 80,
-          alwaysPreserveAspectRatio: true,
         },
       }),
 
@@ -205,7 +101,7 @@ const EditorCanvas = () => {
         render: () => {
           const element = document.createElement("div");
           element.classList.add("inkflow-drag-grip");
-          element.textContent = "::";
+          element.innerHTML = "⋮⋮";
           return element;
         },
         nested: true,
@@ -247,7 +143,7 @@ const EditorCanvas = () => {
   const editorState = useEditorState(editor);
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === "development") {
       console.log("Editor State:", editorState);
     }
   }, [editorState]);
@@ -266,42 +162,6 @@ const EditorCanvas = () => {
       editor.commands.setContent(initialContent, false);
     }
   }, [editor, initialContent]);
-
-  useEffect(() => {
-    if (!editor || !canvasRef.current) return;
-
-    const pageHeight = 1056;
-    const measurePages = () => {
-      const editorElement = canvasRef.current?.querySelector(".ProseMirror");
-      if (!editorElement) return;
-
-      const nextPageCount = Math.max(
-        1,
-        Math.ceil(editorElement.scrollHeight / pageHeight),
-      );
-
-      setPageCount(nextPageCount);
-    };
-
-    measurePages();
-
-    const resizeObserver = new ResizeObserver(measurePages);
-    resizeObserver.observe(canvasRef.current);
-
-    const editorElement = canvasRef.current.querySelector(".ProseMirror");
-    if (editorElement) {
-      resizeObserver.observe(editorElement);
-    }
-
-    editor.on("transaction", measurePages);
-    editor.on("update", measurePages);
-
-    return () => {
-      resizeObserver.disconnect();
-      editor.off("transaction", measurePages);
-      editor.off("update", measurePages);
-    };
-  }, [editor]);
 
   if (!editor) {
     return (
@@ -322,22 +182,8 @@ const EditorCanvas = () => {
   }
 
   return (
-    <article
-      ref={canvasRef}
-      className="editor-canvas"
-      aria-label="Document editor canvas"
-      style={{ "--inkflow-document-height": `${pageCount * 1056}px` }}
-    >
-      <div className="editor-page-stack" aria-hidden="true">
-        {Array.from({ length: pageCount }, (_, index) => (
-          <div key={index} className="editor-page">
-            <span className="editor-page-number">Page {index + 1}</span>
-          </div>
-        ))}
-      </div>
-      <div className="editor-content-layer">
-        <EditorContent editor={editor} aria-label="Document editing area" />
-      </div>
+    <article className="editor-canvas" aria-label="Document editor canvas">
+      <EditorContent editor={editor} aria-label="Document editing area" />
     </article>
   );
 };

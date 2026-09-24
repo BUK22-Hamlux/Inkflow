@@ -19,13 +19,16 @@ const WelcomePage = () => {
   const [isLoadingDocs, setIsLoadingDocs] = useState(true);
 
   useEffect(() => {
-    const loadDocuments = () => {
-      const allDocs = getAllDocuments();
-      const sorted = [...allDocs].sort(
-        (a, b) => new Date(b.lastEditedAt) - new Date(a.lastEditedAt),
-      );
-      setDocuments(sorted);
-      setIsLoadingDocs(false);
+    const loadDocuments = async () => {
+      try {
+        const allDocs = await getAllDocuments();
+        setDocuments(allDocs);
+        setIsLoadingDocs(false);
+      } catch (error) {
+        console.error("Failed to load documents:", error);
+        setDocuments([]);
+        setIsLoadingDocs(false);
+      }
     };
 
     loadDocuments();
@@ -35,7 +38,7 @@ const WelcomePage = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileDrop = (html, fileName) => {
+  const handleFileDrop = async (html, fileName) => {
     const docTitle = fileName.replace(/\.(docx|txt)$/i, "");
     const id = generateDocId();
 
@@ -53,8 +56,12 @@ const WelcomePage = () => {
       lastEditedAt: new Date().toISOString(),
     };
 
-    saveDocument(newDoc);
-    openExistingDocument(newDoc, { showToast: false });
+    try {
+      await saveDocument(newDoc);
+      openExistingDocument(newDoc, { showToast: false });
+    } catch (error) {
+      console.error("Failed to save dropped file:", error);
+    }
   };
 
   const handleOpenDocument = (doc) => {

@@ -20,6 +20,7 @@ const useMenuActions = () => {
     currentDocId,
     currentTitle,
     editor,
+    pageSettings,
     openNewDocument,
     enterFocusMode,
     setIsSidebarOpen,
@@ -73,9 +74,13 @@ const useMenuActions = () => {
   );
 
   // ── File menu ───────────────────────────────────────────────
-  const newDocument = useCallback(() => {
+  const newDocument = useCallback(async () => {
     closeMenu();
-    openNewDocument();
+    try {
+      await openNewDocument();
+    } catch (error) {
+      console.error("Failed to create new document:", error);
+    }
   }, [closeMenu, openNewDocument]);
 
   const openFile = useCallback(() => {
@@ -90,36 +95,45 @@ const useMenuActions = () => {
     // Full open logic coming Day 20
   }, []);
 
-  const saveCurrentDocument = useCallback(() => {
+  const saveCurrentDocument = useCallback(async () => {
     closeMenu();
     if (!editor || !currentDocId) return;
 
-    const content = editor.getJSON();
-    const plainText = editor.getText();
-    const wordCount = plainText.trim().split(/\s+/).filter(Boolean).length;
+    try {
+      const content = editor.getJSON();
+      const plainText = editor.getText();
+      const wordCount = plainText.trim().split(/\s+/).filter(Boolean).length;
 
-    saveDocument({
-      id: currentDocId,
-      title: currentTitle,
-      content,
-      wordCount,
-      preview: plainText.slice(0, 120),
-      lastEditedAt: new Date().toISOString(),
-    });
+      await saveDocument({
+        id: currentDocId,
+        title: currentTitle,
+        content,
+        pageSettings,
+        wordCount,
+        preview: plainText.slice(0, 120),
+        lastEditedAt: new Date().toISOString(),
+      });
 
-    toast.success("Document saved", {
-      duration: 2000,
-      position: "bottom-right",
-      style: {
-        background: "var(--bg-modal)",
-        color: "var(--text-primary)",
-        border: "1px solid var(--status-success)",
-        borderLeft: "4px solid var(--status-success)",
-        borderRadius: "10px",
-        fontSize: "13px",
-      },
-    });
-  }, [editor, currentDocId, currentTitle, closeMenu]);
+      toast.success("Document saved", {
+        duration: 2000,
+        position: "bottom-right",
+        style: {
+          background: "var(--bg-modal)",
+          color: "var(--text-primary)",
+          border: "1px solid var(--status-success)",
+          borderLeft: "4px solid var(--status-success)",
+          borderRadius: "10px",
+          fontSize: "13px",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to save document:", error);
+      toast.error("Failed to save document", {
+        duration: 2000,
+        position: "bottom-right",
+      });
+    }
+  }, [editor, currentDocId, currentTitle, pageSettings, closeMenu]);
 
   const openExportModal = useCallback(() => {
     closeMenu();

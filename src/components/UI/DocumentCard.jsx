@@ -13,23 +13,40 @@ const DocumentCard = ({ doc, onOpen, onDelete }) => {
 
     setIsDeleting(true);
 
-    const success = deleteDocument(doc.id);
+    try {
+      const success = await deleteDocument(doc.id);
 
-    if (success) {
-      toast.success(`"${doc.title}" deleted`, {
-        duration: 3000,
-        position: "bottom-right",
-        style: {
-          background: "var(--bg-modal)",
-          color: "var(--text-primary)",
-          border: "1px solid var(--status-success)",
-          borderLeft: "4px solid var(--status-success)",
-          borderRadius: "10px",
-          fontSize: "13px",
-        },
-      });
-      onDelete(doc.id);
-    } else {
+      if (success) {
+        toast.success(`"${doc.title}" deleted`, {
+          duration: 3000,
+          position: "bottom-right",
+          style: {
+            background: "var(--bg-modal)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--status-success)",
+            borderLeft: "4px solid var(--status-success)",
+            borderRadius: "10px",
+            fontSize: "13px",
+          },
+        });
+        onDelete(doc.id);
+      } else {
+        setIsDeleting(false);
+        toast.error("Could not delete document. Please try again.", {
+          duration: 3000,
+          position: "bottom-right",
+          style: {
+            background: "var(--bg-modal)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--status-danger)",
+            borderLeft: "4px solid var(--status-danger)",
+            borderRadius: "10px",
+            fontSize: "13px",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to delete document:", error);
       setIsDeleting(false);
       toast.error("Could not delete document. Please try again.", {
         duration: 3000,

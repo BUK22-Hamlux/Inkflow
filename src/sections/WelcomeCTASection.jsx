@@ -8,7 +8,11 @@ const WelcomeCTASection = ({ openNewDocument, handleOpenFileClick }) => {
       aria-label="Document actions"
     >
       <button
-        onClick={openNewDocument}
+        onClick={() => {
+          openNewDocument().catch((error) => {
+            console.error("Failed to create new document:", error);
+          });
+        }}
         className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-accent-primary hover:bg-accent-primary-hover text-text-on-accent rounded-xl font-semibold text-sm transition-all duration-150 active:scale-95 shadow-sm cursor-pointer"
         aria-label="Create a new blank document"
       >

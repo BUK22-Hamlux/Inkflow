@@ -26,7 +26,16 @@ const ColorPicker = ({
 
   useEffect(() => {
     if (isOpen) {
-      setRecentColors(getRecentColors());
+      const loadRecentColors = async () => {
+        try {
+          const colors = await getRecentColors();
+          setRecentColors(colors);
+        } catch (error) {
+          console.error("Failed to load recent colors:", error);
+          setRecentColors([]);
+        }
+      };
+      loadRecentColors();
     }
   }, [isOpen]);
 
@@ -74,10 +83,14 @@ const ColorPicker = ({
   }, [isOpen, closePanel]);
 
   const handleColorSelect = useCallback(
-    (hex) => {
+    async (hex) => {
       onColorChange(hex);
-      const updated = addRecentColor(hex);
-      setRecentColors(updated);
+      try {
+        const updated = await addRecentColor(hex);
+        setRecentColors(updated);
+      } catch (error) {
+        console.error("Failed to add recent color:", error);
+      }
       closePanel();
     },
     [onColorChange, closePanel],

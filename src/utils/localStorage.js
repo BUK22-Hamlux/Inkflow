@@ -1,53 +1,122 @@
-const STORAGE_KEY = "inkflow_documents";
-const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024; // 5MB
+// IndexedDB singleton for inkflow document storage
+// Database: inkflow_db, Version: 1
+// Stores: "documents" (keyPath: "id"), "app_settings" (keyPath: "key")
 
-export const getAllDocuments = () => {
+let dbPromise = null;
+
+const openDB = () => {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open("inkflow_db", 1);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      // Create documents store with indexes
+      if (!db.objectStoreNames.contains("documents")) {
+        const documentsStore = db.createObjectStore("documents", {
+          keyPath: "id",
+        });
+        documentsStore.createIndex("lastEditedAt", "lastEditedAt", { unique: false });
+        documentsStore.createIndex("createdAt", "createdAt", { unique: false });
+      }
+
+      // Create app_settings store
+      if (!db.objectStoreNames.contains("app_settings")) {
+        db.createObjectStore("app_settings", { keyPath: "key" });
+      }
+    };
+  });
+
+  return dbPromise;
+};
+
+export const getAllDocuments = async () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY || "[]");
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("documents", "readonly");
+      const store = transaction.objectStore("documents");
+      const index = store.index("lastEditedAt");
+      const request = index.openCursor(null, "prev"); // Sort by lastEditedAt descending
+
+      const results = [];
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch {
     return [];
   }
 };
 
-export const saveDocument = (doc) => {
+export const saveDocument = async (doc) => {
   try {
-    const all = getAllDocuments();
-    const existingIndex = all.findIndex((d) => d.id === doc.id);
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("documents", "readwrite");
+      const store = transaction.objectStore("documents");
 
-    if (existingIndex >= 0) {
-      all[existingIndex] = { ...all[existingIndex], ...doc };
-    } else {
-      all.unshift(doc);
-    }
+      // Add syncStatus if not present
+      const docToSave = {
+        ...doc,
+        syncStatus: doc.syncStatus || "local",
+      };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    return true;
+      const request = store.put(docToSave);
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch (error) {
-    if (error.name === "QuotaExceededError") {
-      console.error("localStorage is full. Cannot save document.");
-    }
+    console.error("Failed to save document:", error);
     return false;
   }
 };
 
-export const getDocumentById = (id) => {
+export const getDocumentById = async (id) => {
   try {
-    const all = getAllDocuments();
-    return all.find((d) => d.id === id) ?? null;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("documents", "readonly");
+      const store = transaction.objectStore("documents");
+      const request = store.get(id);
+
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch {
     return null;
   }
 };
 
-export const deleteDocument = (id) => {
+export const deleteDocument = async (id) => {
   try {
-    const all = getAllDocuments();
-    const filtered = all.filter((d) => d.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    return true;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("documents", "readwrite");
+      const store = transaction.objectStore("documents");
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch {
     return false;
   }
@@ -57,59 +126,116 @@ export const generateDocId = () => {
   return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-export const getStorageUsage = () => {
+export const getStorageUsage = async () => {
   try {
-    let totalBytes = 0;
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      const usedBytes = estimate.usage || 0;
+      const quotaBytes = estimate.quota || 5 * 1024 * 1024; // Fallback to 5MB
+      const usedMB = usedBytes / (1024 * 1024);
+      const percentUsed = (usedBytes / quotaBytes) * 100;
+      const isFull = usedBytes > quotaBytes * 0.9;
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      const value = localStorage.getItem(key);
-      totalBytes += (key.length + value.length) * 2;
+      return {
+        usedBytes,
+        usedMB: parseFloat(usedMB.toFixed(2)),
+        percentUsed: parseFloat(percentUsed.toFixed(1)),
+        isFull,
+      };
     }
-
-    const usedMB = totalBytes / (1024 * 1024);
-    const percentUsed = (totalBytes / STORAGE_LIMIT_BYTES) * 100;
-    const isFull = totalBytes > STORAGE_LIMIT_BYTES * 0.9;
-
-    return {
-      usedBytes: totalBytes,
-      usedMB: parseFloat(usedMB.toFixed(2)),
-      percentUsed: parseFloat(percentUsed.toFixed(1)),
-      isFull,
-    };
   } catch {
-    return {
-      usedBytes: 0,
-      usedMB: 0,
-      percentUsed: 0,
-      isFull: false,
-    };
+    // Fallback to basic estimation if estimate API fails
   }
+
+  // Fallback return
+  return {
+    usedBytes: 0,
+    usedMB: 0,
+    percentUsed: 0,
+    isFull: false,
+  };
 };
 
 const MAX_RECENT_COLORS = 5;
 
-const RECENT_COLORS_KEY = "inkflow_recent_colors";
-
-export const getRecentColors = () => {
+export const getRecentColors = async () => {
   try {
-    const saved = localStorage.getItem(RECENT_COLORS_KEY);
-    return saved ? JSON.parse(saved) : [];
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("app_settings", "readonly");
+      const store = transaction.objectStore("app_settings");
+      const request = store.get("recent_colors");
+
+      request.onsuccess = () => {
+        resolve(request.result?.value || []);
+      };
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch {
     return [];
   }
 };
 
-export const addRecentColor = (hex) => {
+export const addRecentColor = async (hex) => {
   try {
-    const current = getRecentColors();
-    const filtered = current.filter(
-      (c) => c.toLowerCase() !== hex.toLowerCase(),
-    );
-    const updated = [hex, ...filtered].slice(0, MAX_RECENT_COLORS);
-    localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(updated));
-    return updated;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("app_settings", "readwrite");
+      const store = transaction.objectStore("app_settings");
+
+      // Get current colors first
+      const getRequest = store.get("recent_colors");
+      getRequest.onsuccess = () => {
+        const current = getRequest.result?.value || [];
+        const filtered = current.filter(
+          (c) => c.toLowerCase() !== hex.toLowerCase(),
+        );
+        const updated = [hex, ...filtered].slice(0, MAX_RECENT_COLORS);
+
+        const putRequest = store.put({
+          key: "recent_colors",
+          value: updated,
+        });
+
+        putRequest.onsuccess = () => resolve(updated);
+        putRequest.onerror = () => reject(putRequest.error);
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
   } catch {
     return [];
   }
 };
+
+export const clearAllDocuments = async () => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("documents", "readwrite");
+      const store = transaction.objectStore("documents");
+      const request = store.clear();
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } catch {
+    return false;
+  }
+};
+
+/*
+ * SYNC ARCHITECTURE NOTE:
+ * This IndexedDB setup is designed to sync with a backend in the future.
+ * Each document should have a "syncStatus" field to track synchronization state:
+ * - "local": Document exists only locally, needs to be synced
+ * - "synced": Document is synced with the server
+ * - "pending": Document has local changes that need to be pushed to the server
+ * 
+ * When saving a new document, "syncStatus" defaults to "local".
+ * The sync system will use this field to determine which documents need to be
+ * pushed to the server and which have conflicts that need resolution.
+ */
