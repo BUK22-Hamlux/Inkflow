@@ -11,6 +11,7 @@ import WelcomeHeader from "../sections/WelcomeHeader";
 import DragAndDropSection from "../sections/DragAndDropSection";
 import RecentDocumentsSection from "../sections/RecentDocumentsSection";
 import WelcomeCTASection from "../sections/WelcomeCTASection";
+import AuthPanel from "../components/AuthPanel";
 
 const WelcomePage = () => {
   const { openNewDocument, openExistingDocument } = useEditorContext();
@@ -166,6 +167,7 @@ const WelcomePage = () => {
           openNewDocument={openNewDocument}
           handleOpenFileClick={handleOpenFileClick}
         />
+        <AuthPanel onAuthenticated={openNewDocument} />
         <RecentDocumentsSection
           isLoadingDocs={isLoadingDocs}
           documents={documents}
