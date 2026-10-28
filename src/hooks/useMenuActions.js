@@ -2,7 +2,6 @@ import { useState, useCallback, useRef } from "react";
 import { useEditorContext } from "../context/EditorContext";
 import useTheme from "./useTheme";
 import useImageActions from "./useImageActions";
-import { saveDocument } from "../utils/localStorage";
 import toast from "react-hot-toast";
 
 const THEME_ORDER = [
@@ -18,9 +17,8 @@ const THEME_ORDER = [
 const useMenuActions = () => {
   const {
     currentDocId,
-    currentTitle,
     editor,
-    pageSettings,
+    saveCurrentDocument: persistCurrentDocument,
     openNewDocument,
     enterFocusMode,
     setIsSidebarOpen,
@@ -100,19 +98,7 @@ const useMenuActions = () => {
     if (!editor || !currentDocId) return;
 
     try {
-      const content = editor.getJSON();
-      const plainText = editor.getText();
-      const wordCount = plainText.trim().split(/\s+/).filter(Boolean).length;
-
-      await saveDocument({
-        id: currentDocId,
-        title: currentTitle,
-        content,
-        pageSettings,
-        wordCount,
-        preview: plainText.slice(0, 120),
-        lastEditedAt: new Date().toISOString(),
-      });
+      await persistCurrentDocument();
 
       toast.success("Document saved", {
         duration: 2000,
@@ -133,7 +119,7 @@ const useMenuActions = () => {
         position: "bottom-right",
       });
     }
-  }, [editor, currentDocId, currentTitle, pageSettings, closeMenu]);
+  }, [editor, currentDocId, persistCurrentDocument, closeMenu]);
 
   const openExportModal = useCallback(() => {
     closeMenu();

@@ -12,9 +12,11 @@ import DragAndDropSection from "../sections/DragAndDropSection";
 import RecentDocumentsSection from "../sections/RecentDocumentsSection";
 import WelcomeCTASection from "../sections/WelcomeCTASection";
 import AuthPanel from "../components/AuthPanel";
+import { useAuth } from "../context/AuthContext";
 
 const WelcomePage = () => {
   const { openNewDocument, openExistingDocument } = useEditorContext();
+  const { startSession } = useAuth();
   const fileInputRef = useRef(null);
   const [documents, setDocuments] = useState([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(true);
@@ -167,7 +169,7 @@ const WelcomePage = () => {
           openNewDocument={openNewDocument}
           handleOpenFileClick={handleOpenFileClick}
         />
-        <AuthPanel onAuthenticated={openNewDocument} />
+        <AuthPanel onAuthenticated={startSession} />
         <RecentDocumentsSection
           isLoadingDocs={isLoadingDocs}
           documents={documents}

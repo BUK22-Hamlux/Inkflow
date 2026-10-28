@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useEditorContext } from "../../context/EditorContext";
+import { useAuth } from "../../context/AuthContext";
 import useTheme from "../../hooks/useTheme";
 import useMenuActions from "../../hooks/useMenuActions";
 import MenuItem from "./MenuItem";
@@ -36,7 +37,8 @@ import themes from "../../config/themes";
 import Divider from "../UI/Divider";
 
 const MenuBar = () => {
-  const { currentTitle, setCurrentTitle, isSidebarOpen } = useEditorContext();
+  const { currentTitle, setCurrentTitle, isSidebarOpen, returnToWelcome } = useEditorContext();
+  const { user } = useAuth();
   const { theme } = useTheme();
 
   const actions = useMenuActions();
@@ -419,13 +421,15 @@ const MenuBar = () => {
             <ThemeIcon size={16} aria-hidden="true" />
           </button>
 
-          <div
+          <button
+            type="button"
+            onClick={returnToWelcome}
             className="w-7 h-7 rounded-full bg-accent-secondary flex items-center justify-center text-xs font-semibold text-accent-primary select-none shrink-0"
-            role="img"
-            aria-label="User avatar"
+            aria-label={user ? `Account dashboard for ${user.name || user.email}` : "Return to welcome page"}
+            title={user?.email || "Welcome page"}
           >
-            U
-          </div>
+            {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
+          </button>
 
           <button
             type="button"

@@ -35,7 +35,7 @@ const openDB = () => {
   return dbPromise;
 };
 
-export const getAllDocuments = async () => {
+export const getAllDocuments = async (ownerUserId = null) => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -48,7 +48,8 @@ export const getAllDocuments = async () => {
       request.onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
-          results.push(cursor.value);
+          const document = cursor.value;
+          if ((document.ownerUserId || null) === ownerUserId) results.push(document);
           cursor.continue();
         } else {
           resolve(results);

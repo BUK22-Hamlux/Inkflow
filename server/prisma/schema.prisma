@@ -13,4 +13,21 @@ model User {
   password  String
   name      String?
   createdAt DateTime @default(now())
+  documents Document[]
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  title        String   @default("Untitled Document")
+  content      Json
+  preview      String   @default("")
+  wordCount    Int      @default(0)
+  pageSettings Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
 }
