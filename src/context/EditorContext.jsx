@@ -3,13 +3,15 @@ import toast from "react-hot-toast";
 import { deleteDocument, generateDocId, getAllDocuments, getDocumentById, saveDocument } from "../utils/localStorage";
 import { deleteAccountDocument, syncAccountDocument } from "../lib/api";
 import { useAuth } from "./AuthContext";
+import { getPageDimensions, PAGE_SIZES } from "../config/pageSetup";
 
 const EditorContext = createContext(null);
 
 const DEFAULT_PAGE_SETTINGS = {
   pageSize: "a4",
+  orientation: "portrait",
   width: 794,
-  height: 1056,
+  height: 1123,
   marginTop: 96,
   marginRight: 96,
   marginBottom: 96,
@@ -17,6 +19,20 @@ const DEFAULT_PAGE_SETTINGS = {
   pageGap: 28,
   lineHeight: 1.8,
   paragraphSpacing: 12,
+};
+
+const normalizePageSettings = (settings = {}) => {
+  const pageSize = PAGE_SIZES[settings.pageSize] ? settings.pageSize : DEFAULT_PAGE_SETTINGS.pageSize;
+  const orientation = settings.orientation || (settings.width > settings.height ? "landscape" : "portrait");
+  return {
+    ...DEFAULT_PAGE_SETTINGS,
+    ...settings,
+    pageSize,
+    orientation,
+    ...((settings.width && settings.height)
+      ? { width: settings.width, height: settings.height }
+      : getPageDimensions(pageSize, orientation)),
+  };
 };
 
 export const EditorProvider = ({ children }) => {
@@ -47,6 +63,22 @@ export const EditorProvider = ({ children }) => {
 
   const updatePageSettings = (updates) => {
     setPageSettings((current) => ({ ...current, ...updates }));
+  };
+
+  const updatePageSize = (pageSize) => {
+    setPageSettings((current) => ({
+      ...current,
+      pageSize,
+      ...getPageDimensions(pageSize, current.orientation || "portrait"),
+    }));
+  };
+
+  const updatePageOrientation = (orientation) => {
+    setPageSettings((current) => ({
+      ...current,
+      orientation,
+      ...getPageDimensions(current.pageSize || "a4", orientation),
+    }));
   };
 
   const resetPageSettings = () => {
@@ -384,8 +416,7 @@ export const EditorProvider = ({ children }) => {
     setDocumentStorage(storage);
     setCurrentTitle(doc.title || "Untitled Document");
     setInitialContent(doc.content ?? null);
-    setPageSettings(doc.pageSettings ?? DEFAULT_PAGE_SETTINGS);
-    setPageSettings(doc.pageSettings ?? DEFAULT_PAGE_SETTINGS);
+    setPageSettings(normalizePageSettings(doc.pageSettings));
     setAppState("editing");
 
     if (showToast) {
@@ -425,6 +456,8 @@ export const EditorProvider = ({ children }) => {
     setEditor,
     getEditor,
     updatePageSettings,
+    updatePageSize,
+    updatePageOrientation,
     resetPageSettings,
     saveCurrentDocument,
     syncPendingDocuments,

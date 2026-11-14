@@ -8,7 +8,9 @@ const normalizeJson = (value) => {
   if (Array.isArray(value)) return value.map(normalizeJson);
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, normalizeJson(value[key])]),
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, normalizeJson(value[key])]),
     );
   }
   return value;
@@ -33,8 +35,7 @@ router.get("/", async (req, res) => {
       },
     });
     return res.json({ documents });
-  } catch (error) {
-    console.error("Could not load account documents:", error);
+  } catch {
     return res.status(500).json({ error: "Could not load your documents." });
   }
 });
@@ -44,13 +45,19 @@ router.post("/", async (req, res) => {
   if (title != null && typeof title !== "string") {
     return res.status(400).json({ error: "Document title must be text." });
   }
-  if (pageSettings != null && (typeof pageSettings !== "object" || Array.isArray(pageSettings))) {
+  if (
+    pageSettings != null &&
+    (typeof pageSettings !== "object" || Array.isArray(pageSettings))
+  ) {
     return res.status(400).json({ error: "Page settings must be an object." });
   }
   try {
     const document = await prisma.document.create({
       data: {
-        title: typeof title === "string" && title.trim() ? title.trim() : "Untitled Document",
+        title:
+          typeof title === "string" && title.trim()
+            ? title.trim()
+            : "Untitled Document",
         content: emptyContent,
         pageSettings: pageSettings ?? undefined,
         userId: req.user.userId,
@@ -64,23 +71,50 @@ router.post("/", async (req, res) => {
 });
 
 router.post("/sync", async (req, res) => {
-  const { id, title, content, preview, wordCount, pageSettings, baseUpdatedAt, restoreDeleted = false } = req.body ?? {};
+  const {
+    id,
+    title,
+    content,
+    preview,
+    wordCount,
+    pageSettings,
+    baseUpdatedAt,
+    restoreDeleted = false,
+  } = req.body ?? {};
   if (typeof id !== "string" || !id.trim()) {
-    return res.status(400).json({ error: "A document ID is required for sync." });
+    return res
+      .status(400)
+      .json({ error: "A document ID is required for sync." });
   }
-  if (typeof title !== "string" || !content || typeof content !== "object" || Array.isArray(content)) {
-    return res.status(400).json({ error: "Document title and content are required." });
+  if (
+    typeof title !== "string" ||
+    !content ||
+    typeof content !== "object" ||
+    Array.isArray(content)
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Document title and content are required." });
   }
   if (preview != null && typeof preview !== "string") {
     return res.status(400).json({ error: "Document preview must be text." });
   }
   if (wordCount != null && (!Number.isInteger(wordCount) || wordCount < 0)) {
-    return res.status(400).json({ error: "Word count must be a non-negative integer." });
+    return res
+      .status(400)
+      .json({ error: "Word count must be a non-negative integer." });
   }
-  if (pageSettings != null && (typeof pageSettings !== "object" || Array.isArray(pageSettings))) {
+  if (
+    pageSettings != null &&
+    (typeof pageSettings !== "object" || Array.isArray(pageSettings))
+  ) {
     return res.status(400).json({ error: "Page settings must be an object." });
   }
-  if (baseUpdatedAt != null && (typeof baseUpdatedAt !== "string" || Number.isNaN(Date.parse(baseUpdatedAt)))) {
+  if (
+    baseUpdatedAt != null &&
+    (typeof baseUpdatedAt !== "string" ||
+      Number.isNaN(Date.parse(baseUpdatedAt)))
+  ) {
     return res.status(400).json({ error: "The sync version is invalid." });
   }
   if (typeof restoreDeleted !== "boolean") {
@@ -92,24 +126,32 @@ router.post("/sync", async (req, res) => {
     if (existing && existing.userId !== req.user.userId) {
       return res.status(404).json({ error: "Document not found." });
     }
-    const requestMatchesStored = existing && !existing.deletedAt
-      && existing.title === (title.trim() || "Untitled Document")
-      && jsonMatches(existing.content, content)
-      && existing.preview === (preview || "").slice(0, 300)
-      && existing.wordCount === (wordCount || 0)
-      && jsonMatches(existing.pageSettings, pageSettings ?? null);
+    const requestMatchesStored =
+      existing &&
+      !existing.deletedAt &&
+      existing.title === (title.trim() || "Untitled Document") &&
+      jsonMatches(existing.content, content) &&
+      existing.preview === (preview || "").slice(0, 300) &&
+      existing.wordCount === (wordCount || 0) &&
+      jsonMatches(existing.pageSettings, pageSettings ?? null);
     if (existing && requestMatchesStored) {
       return res.json({ document: existing });
     }
     if (existing?.deletedAt && !restoreDeleted) {
       return res.status(409).json({
-        error: "This document was deleted from the account while this device was offline.",
+        error:
+          "This document was deleted from the account while this device was offline.",
         document: existing,
       });
     }
-    if (existing && (!baseUpdatedAt || new Date(baseUpdatedAt).getTime() !== existing.updatedAt.getTime())) {
+    if (
+      existing &&
+      (!baseUpdatedAt ||
+        new Date(baseUpdatedAt).getTime() !== existing.updatedAt.getTime())
+    ) {
       return res.status(409).json({
-        error: "This document changed on another device. Your local copy is preserved until the conflict is resolved.",
+        error:
+          "This document changed on another device. Your local copy is preserved until the conflict is resolved.",
         document: existing,
       });
     }
@@ -136,7 +178,8 @@ router.post("/sync", async (req, res) => {
       if (updated.count !== 1) {
         const latest = await prisma.document.findUnique({ where: { id } });
         return res.status(409).json({
-          error: "This document changed on another device. Your local copy is preserved until the conflict is resolved.",
+          error:
+            "This document changed on another device. Your local copy is preserved until the conflict is resolved.",
           document: latest,
         });
       }
@@ -147,7 +190,9 @@ router.post("/sync", async (req, res) => {
     return res.json({ document });
   } catch (error) {
     if (error.code === "P2002") {
-      const existing = await prisma.document.findUnique({ where: { id } }).catch(() => null);
+      const existing = await prisma.document
+        .findUnique({ where: { id } })
+        .catch(() => null);
       return res.status(409).json({
         error: "This document ID is already in use.",
         ...(existing?.userId === req.user.userId ? { document: existing } : {}),
@@ -178,16 +223,26 @@ router.put("/:id", async (req, res) => {
   if (title != null && typeof title !== "string") {
     return res.status(400).json({ error: "Document title must be text." });
   }
-  if (content !== undefined && (!content || typeof content !== "object" || Array.isArray(content))) {
-    return res.status(400).json({ error: "Document content must be a TipTap document." });
+  if (
+    content !== undefined &&
+    (!content || typeof content !== "object" || Array.isArray(content))
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Document content must be a TipTap document." });
   }
   if (preview != null && typeof preview !== "string") {
     return res.status(400).json({ error: "Document preview must be text." });
   }
   if (wordCount != null && (!Number.isInteger(wordCount) || wordCount < 0)) {
-    return res.status(400).json({ error: "Word count must be a non-negative integer." });
+    return res
+      .status(400)
+      .json({ error: "Word count must be a non-negative integer." });
   }
-  if (pageSettings != null && (typeof pageSettings !== "object" || Array.isArray(pageSettings))) {
+  if (
+    pageSettings != null &&
+    (typeof pageSettings !== "object" || Array.isArray(pageSettings))
+  ) {
     return res.status(400).json({ error: "Page settings must be an object." });
   }
 
@@ -219,29 +274,55 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const { expectedUpdatedAt, force = false, title, content, preview, wordCount, pageSettings } = req.body ?? {};
+  const {
+    expectedUpdatedAt,
+    force = false,
+    title,
+    content,
+    preview,
+    wordCount,
+    pageSettings,
+  } = req.body ?? {};
   if (typeof force !== "boolean") {
-    return res.status(400).json({ error: "The force-delete option is invalid." });
+    return res
+      .status(400)
+      .json({ error: "The force-delete option is invalid." });
   }
-  if (expectedUpdatedAt != null && (typeof expectedUpdatedAt !== "string" || Number.isNaN(Date.parse(expectedUpdatedAt)))) {
+  if (
+    expectedUpdatedAt != null &&
+    (typeof expectedUpdatedAt !== "string" ||
+      Number.isNaN(Date.parse(expectedUpdatedAt)))
+  ) {
     return res.status(400).json({ error: "The delete version is invalid." });
   }
   try {
     let existing = await prisma.document.findFirst({
       where: { id: req.params.id, userId: req.user.userId },
     });
-    if (!existing && content && typeof content === "object" && !Array.isArray(content)) {
+    if (
+      !existing &&
+      content &&
+      typeof content === "object" &&
+      !Array.isArray(content)
+    ) {
       try {
         await prisma.document.create({
           data: {
             id: req.params.id,
-            title: typeof title === "string" && title.trim() ? title.trim() : "Untitled Document",
+            title:
+              typeof title === "string" && title.trim()
+                ? title.trim()
+                : "Untitled Document",
             content,
             preview: typeof preview === "string" ? preview.slice(0, 300) : "",
-            wordCount: Number.isInteger(wordCount) && wordCount >= 0 ? wordCount : 0,
-            pageSettings: pageSettings && typeof pageSettings === "object" && !Array.isArray(pageSettings)
-              ? pageSettings
-              : undefined,
+            wordCount:
+              Number.isInteger(wordCount) && wordCount >= 0 ? wordCount : 0,
+            pageSettings:
+              pageSettings &&
+              typeof pageSettings === "object" &&
+              !Array.isArray(pageSettings)
+                ? pageSettings
+                : undefined,
             deletedAt: new Date(),
             userId: req.user.userId,
           },
@@ -255,9 +336,14 @@ router.delete("/:id", async (req, res) => {
       }
     }
     if (!existing || existing.deletedAt) return res.status(204).end();
-    if (!force && expectedUpdatedAt && new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()) {
+    if (
+      !force &&
+      expectedUpdatedAt &&
+      new Date(expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()
+    ) {
       return res.status(409).json({
-        error: "This document changed in your account while its deletion was offline.",
+        error:
+          "This document changed in your account while its deletion was offline.",
         document: existing,
       });
     }
@@ -266,7 +352,9 @@ router.delete("/:id", async (req, res) => {
         id: req.params.id,
         userId: req.user.userId,
         deletedAt: null,
-        ...(force || !expectedUpdatedAt ? {} : { updatedAt: new Date(expectedUpdatedAt) }),
+        ...(force || !expectedUpdatedAt
+          ? {}
+          : { updatedAt: new Date(expectedUpdatedAt) }),
       },
       data: { deletedAt: new Date() },
     });
@@ -277,7 +365,8 @@ router.delete("/:id", async (req, res) => {
       if (latest?.deletedAt) return res.status(204).end();
       if (latest) {
         return res.status(409).json({
-          error: "This document changed in your account while its deletion was offline.",
+          error:
+            "This document changed in your account while its deletion was offline.",
           document: latest,
         });
       }

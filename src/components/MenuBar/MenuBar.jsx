@@ -35,9 +35,10 @@ import {
 } from "lucide-react";
 import themes from "../../config/themes";
 import Divider from "../UI/Divider";
+import PageSetupPanel from "./PageSetupPanel";
 
 const MenuBar = () => {
-  const { currentTitle, setCurrentTitle, isSidebarOpen, returnToWelcome } = useEditorContext();
+  const { currentTitle, setCurrentTitle, isSidebarOpen, returnToWelcome, pageSettings } = useEditorContext();
   const { user } = useAuth();
   const { theme } = useTheme();
 
@@ -270,6 +271,18 @@ const MenuBar = () => {
               onClick={actions.openFocusMode}
               disabled={!actions.editor}
             />
+          </MenuItem>
+
+          {/* Page setup */}
+          <MenuItem
+            label="Page setup"
+            isOpen={actions.openMenu === "Page setup"}
+            onToggle={() => actions.toggleMenu("Page setup")}
+            onClose={actions.closeMenu}
+            width="300px"
+            keepOpen
+          >
+            <PageSetupPanel key={`${pageSettings.pageSize}-${pageSettings.orientation}`} />
           </MenuItem>
 
           {/* Insert */}

@@ -92,7 +92,9 @@ const DocumentSettings = () => {
         <div className="rounded-lg border border-border-toolbar bg-editor p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium text-text-secondary">Size</span>
-            <span className="font-semibold text-text-primary">A4 portrait</span>
+            <span className="font-semibold capitalize text-text-primary">
+              {(pageSettings.pageSize || "a4").toUpperCase()} {pageSettings.orientation || "portrait"}
+            </span>
           </div>
         </div>
       </section>

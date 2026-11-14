@@ -59,7 +59,7 @@ const FontSize = Extension.create({
 });
 
 const EditorCanvas = () => {
-  const { initialContent, setEditor } = useEditorContext();
+  const { initialContent, setEditor, pageSettings } = useEditorContext();
 
   const editor = useEditor({
     extensions: [
@@ -178,7 +178,18 @@ const EditorCanvas = () => {
   }
 
   return (
-    <article className="editor-canvas" aria-label="Document editor canvas">
+    <article
+      className="editor-canvas"
+      aria-label="Document editor canvas"
+      style={{
+        "--page-width": `${pageSettings.width}px`,
+        "--page-height": `${pageSettings.height}px`,
+        "--page-margin-top": `${pageSettings.marginTop}px`,
+        "--page-margin-right": `${pageSettings.marginRight}px`,
+        "--page-margin-bottom": `${pageSettings.marginBottom}px`,
+        "--page-margin-left": `${pageSettings.marginLeft}px`,
+      }}
+    >
       <EditorContent editor={editor} aria-label="Document editing area" />
     </article>
   );

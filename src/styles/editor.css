@@ -1,13 +1,14 @@
 /* ── Editor wrapper ───────────────────────────────────────── */
 .editor-canvas {
-  width: 100%;
-  max-width: 794px;
-  min-height: 1056px;
+  box-sizing: border-box;
+  width: min(100%, var(--page-width, 794px));
+  min-height: var(--page-height, 1123px);
   background-color: var(--bg-editor);
   box-shadow: var(--shadow-editor);
   border-radius: 4px;
   margin: 40px auto;
-  padding: 96px;
+  padding: var(--page-margin-top, 96px) var(--page-margin-right, 96px)
+    var(--page-margin-bottom, 96px) var(--page-margin-left, 96px);
   transition:
     background-color var(--transition-theme),
     box-shadow var(--transition-theme);
@@ -16,11 +17,12 @@
 @media (max-width: 768px) {
   .editor-canvas {
     width: 100%;
-    max-width: 100%;
-    height: auto;
-    min-height: 100vh;
+    min-height: max(var(--page-height, 1123px), 100vh);
     margin: 0;
-    padding: 24px 20px;
+    padding: min(var(--page-margin-top, 96px), 28px)
+      min(var(--page-margin-right, 96px), 20px)
+      min(var(--page-margin-bottom, 96px), 28px)
+      min(var(--page-margin-left, 96px), 20px);
     border-radius: 0;
     box-shadow: none;
   }
@@ -35,7 +37,13 @@
   line-height: var(--inkflow-line-height, 1.8);
   color: var(--text-primary);
   caret-color: var(--accent-primary);
-  min-height: 600px;
+  min-height: max(
+    240px,
+    calc(
+      var(--page-height, 1123px) - var(--page-margin-top, 96px) -
+        var(--page-margin-bottom, 96px)
+    )
+  );
   word-wrap: break-word;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;

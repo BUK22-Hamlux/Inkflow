@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import Dropdown from "../UI/Dropdown";
 
-const MenuItem = ({ label, children, isOpen, disabled, onToggle }) => {
+const MenuItem = ({ label, children, isOpen, disabled, onToggle, width = "200px", keepOpen = false }) => {
   const triggerRef = useRef(null);
   return (
     <Dropdown
@@ -23,8 +23,9 @@ const MenuItem = ({ label, children, isOpen, disabled, onToggle }) => {
         </button>
       }
       align="left"
-      width="200px"
+      width={width}
       disabled={disabled}
+      closeOnPanelClick={!keepOpen}
     >
       <div role="menu" aria-label={`${label} menu options`} className="py-1">
         {children}

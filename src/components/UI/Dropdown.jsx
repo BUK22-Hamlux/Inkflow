@@ -9,6 +9,7 @@ const Dropdown = ({
   disabled = false,
   onOpen,
   onClose,
+  closeOnPanelClick = true,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -137,7 +138,10 @@ const Dropdown = ({
               width: panelWidth,
             }}
             className="absolute min-w-40 bg-dropdown shadow-modal border border-border-toolbar rounded-[10px] z-99999 overflow-hidden"
-            onClick={closeDropdown}
+            onClick={(event) => {
+              if (!closeOnPanelClick || !event.target.closest('[role="menuitem"]')) return;
+              closeDropdown();
+            }}
           >
             {children}
           </div>,
