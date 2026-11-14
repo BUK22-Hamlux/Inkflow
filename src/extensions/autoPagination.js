@@ -4,163 +4,160 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 export const paginationPluginKey = new PluginKey("inkflowAutoPagination");
 
-const MAX_PAGES = 80;
+const MAX_PAGES = 200;
+const isSpacer = (element) => element?.nodeType === 1 && element.hasAttribute("data-inkflow-page-spacer");
 
-const isSpacer = (el) =>
-  el?.nodeType === 1 && el.hasAttribute("data-inkflow-page-spacer");
+const spacerHeight = (element) => element.getBoundingClientRect().height;
 
-const contentHeightOf = (el) => {
-  let height = el.offsetHeight;
-  el.querySelectorAll("[data-inkflow-page-spacer]").forEach((spacer) => {
-    height -= spacer.offsetHeight;
+const naturalHeight = (element) => {
+  let height = element.getBoundingClientRect().height;
+  element.querySelectorAll("[data-inkflow-page-spacer]").forEach((spacer) => {
+    height -= spacerHeight(spacer);
   });
   return Math.max(0, height);
 };
 
-const blockMetrics = (el) => {
-  const style = window.getComputedStyle(el);
-  return {
-    height: contentHeightOf(el),
-    marginTop: parseFloat(style.marginTop) || 0,
-    marginBottom: parseFloat(style.marginBottom) || 0,
-  };
-};
+const textLines = (view, root) => {
+  const rootRect = root.getBoundingClientRect();
+  const spacers = [...root.querySelectorAll("[data-inkflow-page-spacer]")]
+    .map((element) => ({ top: element.getBoundingClientRect().top, height: spacerHeight(element) }));
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const lineMap = new Map();
+  let textNode;
 
-const isUnbreakable = (el) => {
-  const tag = el.tagName;
-  return (
-    tag === "IMG" ||
-    tag === "TABLE" ||
-    tag === "PRE" ||
-    tag === "HR" ||
-    tag === "BLOCKQUOTE" ||
-    el.matches?.("[data-resize-container]") ||
-    el.querySelector?.("img, table, pre, [data-resize-container]")
-  );
-};
+  while ((textNode = walker.nextNode())) {
+    if (!textNode.nodeValue?.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(textNode);
+    for (const lineRect of range.getClientRects()) {
+      if (lineRect.height < 1) continue;
+      let low = 0;
+      let high = textNode.nodeValue.length - 1;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        range.setStart(textNode, middle);
+        range.setEnd(textNode, middle + 1);
+        if (range.getBoundingClientRect().top < lineRect.top - 1) low = middle + 1;
+        else high = middle;
+      }
+      range.setStart(textNode, low);
+      range.setEnd(textNode, low + 1);
+      const charRect = range.getBoundingClientRect();
+      if (Math.abs(charRect.top - lineRect.top) > 2) continue;
 
-const createSpacerElement = () => {
-  const el = document.createElement("span");
-  el.setAttribute("data-inkflow-page-spacer", "true");
-  el.className = "inkflow-page-spacer";
-  el.contentEditable = "false";
-  el.setAttribute("aria-hidden", "true");
-  return el;
-};
-
-const posAtDom = (view, el, offset = 0) => {
-  try {
-    return view.posAtDOM(el, offset);
-  } catch {
-    return null;
+      let position;
+      try {
+        position = view.posAtDOM(textNode, low);
+      } catch {
+        continue;
+      }
+      const precedingSpacerHeight = spacers
+        .filter((spacer) => spacer.top + spacer.height <= lineRect.top + 1)
+        .reduce((sum, spacer) => sum + spacer.height, 0);
+      const localTop = Math.max(0, lineRect.top - rootRect.top - precedingSpacerHeight);
+      const key = Math.round(localTop / 2);
+      const line = lineMap.get(key);
+      if (line) {
+        line.pos = Math.min(line.pos, position);
+        line.height = Math.max(line.height, lineRect.height);
+      } else {
+        lineMap.set(key, { localTop, height: lineRect.height, pos: position });
+      }
+    }
   }
+  return [...lineMap.values()].sort((a, b) => a.localTop - b.localTop);
 };
 
-const posAtContentFraction = (view, el, fraction) => {
-  const from = posAtDom(view, el, 0);
-  const to = posAtDom(view, el, el.childNodes.length);
-  if (from == null) return null;
-  if (to == null || to <= from) return from;
-  const t = Math.min(1, Math.max(0, fraction));
-  return Math.round(from + (to - from) * t);
+const createSpacer = (height) => () => {
+  const element = document.createElement("span");
+  element.setAttribute("data-inkflow-page-spacer", "true");
+  element.className = "inkflow-page-spacer";
+  element.contentEditable = "false";
+  element.setAttribute("aria-hidden", "true");
+  element.style.height = `${Math.max(0, height)}px`;
+  return element;
 };
 
 export const computePagination = (view, settings) => {
-  const pageHeight = settings.height;
-  const marginTop = settings.marginTop;
-  const marginBottom = settings.marginBottom;
-  const enabled = settings.enabled !== false;
-
-  if (!enabled || !view?.dom || !pageHeight) {
+  const pageHeight = Number(settings.height);
+  const marginTop = Number(settings.marginTop) || 0;
+  const marginBottom = Number(settings.marginBottom) || 0;
+  const pageGap = Number(settings.pageGap) || 0;
+  const contentHeight = pageHeight - marginTop - marginBottom;
+  if (settings.enabled === false || !view?.dom || !pageHeight || contentHeight < 48) {
     return { decorations: DecorationSet.empty, pageCount: 1 };
   }
 
-  const writableHeight = pageHeight - marginTop - marginBottom;
-  if (writableHeight < 48) {
-    return { decorations: DecorationSet.empty, pageCount: 1 };
-  }
+  const decorations = [];
+  const seen = new Set();
+  const rootRect = view.dom.getBoundingClientRect();
+  const spacers = [...view.dom.querySelectorAll("[data-inkflow-page-spacer]")]
+    .map((element) => ({ top: element.getBoundingClientRect().top, height: spacerHeight(element) }));
+  let pageStart = 0;
+  let pageCount = 1;
+  const pagePitch = pageHeight + pageGap;
 
-  const children = [...view.dom.children].filter((el) => !isSpacer(el));
-  let contentHeight = 0;
-  for (const child of children) {
-    const metrics = blockMetrics(child);
-    contentHeight +=
-      metrics.marginTop + metrics.height + metrics.marginBottom;
-  }
+  const removedHeightBefore = (top) => spacers
+    .filter((spacer) => spacer.top + spacer.height <= top + 1)
+    .reduce((sum, spacer) => sum + spacer.height, 0);
 
-  const pageCount = Math.min(
-    MAX_PAGES,
-    Math.max(1, Math.ceil((contentHeight - 0.5) / writableHeight)),
-  );
+  const naturalTop = (element) => {
+    const top = element.getBoundingClientRect().top;
+    return top - rootRect.top - removedHeightBefore(top);
+  };
 
-  if (pageCount <= 1 || children.length === 0) {
-    return { decorations: DecorationSet.empty, pageCount: 1 };
-  }
-
-  const widgets = [];
-  const usedKeys = new Set();
-  let contentY = 0;
-  let page = 1;
-  let boundary = writableHeight;
-
-  const addWidget = (pos) => {
-    if (widgets.length >= pageCount - 1) return false;
-    if (pos == null || pos < 1 || pos > view.state.doc.content.size) {
-      return false;
-    }
-    const key = `inkflow-spacer-${page}`;
-    if (usedKeys.has(key) || widgets.some((widget) => widget.from === pos)) {
-      return false;
-    }
-    usedKeys.add(key);
-    widgets.push(
-      Decoration.widget(pos, createSpacerElement, {
-        side: -1,
-        key,
-        ignoreSelection: true,
-      }),
-    );
-    page += 1;
-    boundary += writableHeight;
+  const addSpacer = (position, offset) => {
+    if (decorations.length >= MAX_PAGES - 1 || position < 0 || position > view.state.doc.content.size) return false;
+    const height = Math.max(0, Math.ceil(pagePitch - offset));
+    const key = `${position}:${Math.round(height)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    decorations.push(Decoration.widget(position, createSpacer(height), {
+      key: `inkflow-page-${key}`,
+      side: -1,
+      ignoreSelection: true,
+    }));
+    pageCount += 1;
     return true;
   };
 
-  for (const child of children) {
-    if (widgets.length >= pageCount - 1) break;
+  view.state.doc.forEach((node, position) => {
+    if (pageCount >= MAX_PAGES) return;
+    const element = view.nodeDOM(position);
+    if (!element || element.nodeType !== 1 || isSpacer(element)) return;
 
-    const metrics = blockMetrics(child);
-    const start = contentY + metrics.marginTop;
-    const end = start + metrics.height;
-
-    while (page < pageCount && start >= boundary - 1) {
-      if (!addWidget(posAtDom(view, child, 0))) break;
+    if (node.type.name === "pageBreak") {
+      const breakTop = naturalTop(element);
+      if (addSpacer(position + node.nodeSize, breakTop - pageStart)) pageStart = breakTop;
+      return;
     }
 
-    while (
-      page < pageCount &&
-      start < boundary - 1 &&
-      end > boundary + 1
-    ) {
-      const remaining = boundary - start;
+    const blockTop = naturalTop(element);
+    const isUnbreakable = ["image", "table", "codeBlock", "horizontalRule"].includes(node.type.name)
+      || element.matches("img, table, pre, [data-resize-container]")
+      || element.querySelector("img, table, pre, [data-resize-container]");
 
-      if (isUnbreakable(child)) {
-        if (start > 1) {
-          if (!addWidget(posAtDom(view, child, 0))) break;
-        } else {
-          break;
-        }
-      } else {
-        const fraction =
-          metrics.height <= 0 ? 0 : remaining / metrics.height;
-        if (!addWidget(posAtContentFraction(view, child, fraction))) break;
+    if (isUnbreakable) {
+      const blockHeight = naturalHeight(element);
+      const offset = blockTop - pageStart;
+      if (offset > 0 && offset + blockHeight > contentHeight && addSpacer(position, offset)) {
+        pageStart = blockTop;
       }
+      return;
     }
 
-    contentY = end + metrics.marginBottom;
-  }
+    for (const line of textLines(view, element)) {
+      const lineTop = blockTop + line.localTop;
+      const offset = lineTop - pageStart;
+      if (offset > 0 && offset + line.height > contentHeight + 1 && addSpacer(line.pos, offset)) {
+        pageStart = lineTop;
+      }
+      if (pageCount >= MAX_PAGES) break;
+    }
+  });
 
   return {
-    decorations: DecorationSet.create(view.state.doc, widgets),
+    decorations: DecorationSet.create(view.state.doc, decorations),
     pageCount,
   };
 };
@@ -170,7 +167,7 @@ export const AutoPagination = Extension.create({
 
   addStorage() {
     return {
-      height: 1056,
+      height: 1123,
       marginTop: 96,
       marginBottom: 96,
       pageGap: 28,
@@ -181,78 +178,57 @@ export const AutoPagination = Extension.create({
 
   addProseMirrorPlugins() {
     const editor = this.editor;
-
-    return [
-      new Plugin({
-        key: paginationPluginKey,
-        state: {
-          init: () => DecorationSet.empty,
-          apply(tr, decorations) {
-            const next = tr.getMeta(paginationPluginKey);
-            if (next) return next;
-            return decorations.map(tr.mapping, tr.doc);
-          },
+    return [new Plugin({
+      key: paginationPluginKey,
+      state: {
+        init: () => DecorationSet.empty,
+        apply(transaction, current) {
+          const next = transaction.getMeta(paginationPluginKey);
+          return next instanceof DecorationSet ? next : current.map(transaction.mapping, transaction.doc);
         },
-        props: {
-          decorations(state) {
-            return paginationPluginKey.getState(state);
-          },
+      },
+      props: {
+        decorations(state) {
+          return paginationPluginKey.getState(state);
         },
-        view(editorView) {
-          let frame = 0;
-
-          const decorationSignature = (decorations) =>
-            decorations
-              .find()
-              .map((decoration) => decoration.from)
-              .join(",");
-
-          const sync = () => {
-            if (editorView.isDestroyed) return;
-
-            const settings = editor.storage.autoPagination || {};
-            const { decorations, pageCount } = computePagination(
-              editorView,
-              settings,
-            );
-            const nextPositions = decorationSignature(decorations);
-            const current = paginationPluginKey.getState(editorView.state);
-            const currentPositions = current
-              ? decorationSignature(current)
-              : "";
-
-            if (nextPositions !== currentPositions) {
-              editorView.dispatch(
-                editorView.state.tr
-                  .setMeta(paginationPluginKey, decorations)
-                  .setMeta("addToHistory", false),
-              );
-            }
-
-            settings.onPageCountChange?.(pageCount);
-          };
-
-          const schedule = () => {
+      },
+      view(editorView) {
+        let frame = 0;
+        const signature = (set) => set.find().map((decoration) => `${decoration.from}:${decoration.spec.key}`).join("|");
+        const sync = () => {
+          if (editorView.isDestroyed) return;
+          const settings = editor.storage.autoPagination;
+          const result = computePagination(editorView, settings);
+          const pageHeight = Number(settings.height) || 1123;
+          const pageGap = Number(settings.pageGap) || 0;
+          const canvas = editorView.dom.closest(".editor-canvas");
+          canvas?.style.setProperty(
+            "--pagination-min-height",
+            `${result.pageCount * pageHeight + Math.max(0, result.pageCount - 1) * pageGap}px`,
+          );
+          const current = paginationPluginKey.getState(editorView.state) || DecorationSet.empty;
+          if (signature(result.decorations) !== signature(current)) {
+            editorView.dispatch(editorView.state.tr
+              .setMeta(paginationPluginKey, result.decorations)
+              .setMeta("addToHistory", false));
+          }
+          settings.onPageCountChange?.(result.pageCount);
+        };
+        const schedule = () => {
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(sync);
+        };
+        const resizeObserver = new ResizeObserver(schedule);
+        resizeObserver.observe(editorView.dom);
+        schedule();
+        return {
+          update: schedule,
+          destroy() {
             cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(sync);
-          };
-
-          const resizeObserver = new ResizeObserver(schedule);
-          resizeObserver.observe(editorView.dom);
-
-          schedule();
-
-          return {
-            update() {
-              schedule();
-            },
-            destroy() {
-              cancelAnimationFrame(frame);
-              resizeObserver.disconnect();
-            },
-          };
-        },
-      }),
-    ];
+            resizeObserver.disconnect();
+          },
+        };
+      },
+    })];
   },
 });

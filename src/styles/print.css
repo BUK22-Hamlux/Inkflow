@@ -26,6 +26,12 @@
     display: none !important;
   }
 
+  .ProseMirror .inkflow-page-break {
+    display: block !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
   .editor-canvas {
     width: 100% !important;
     max-width: 100% !important;

@@ -20,6 +20,8 @@ import { Extension } from "@tiptap/core";
 import DragHandle from "@tiptap/extension-drag-handle";
 import Dropcursor from "@tiptap/extension-dropcursor";
 import { ImageResize } from "tiptap-extension-resize-image";
+import { AutoPagination, paginationPluginKey } from "../../extensions/autoPagination";
+import { PageBreak } from "../../extensions/PageBreak";
 import { useEditorContext } from "../../context/EditorContext";
 import useEditorState from "../../hooks/useEditorState";
 
@@ -68,6 +70,8 @@ const EditorCanvas = () => {
         heading: { levels: [1, 2, 3, 4] },
         dropcursor: false, // Prevents duplicate dropcursor warning
       }),
+      AutoPagination,
+      PageBreak,
 
       TextStyle,
       FontSize,
@@ -142,7 +146,7 @@ const EditorCanvas = () => {
   const editorState = useEditorState(editor);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.DEV) {
       console.log("Editor State:", editorState);
     }
   }, [editorState]);
@@ -151,6 +155,21 @@ const EditorCanvas = () => {
     if (!editor) return;
     setEditor(editor);
   }, [editor, setEditor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    Object.assign(editor.storage.autoPagination, {
+      height: pageSettings.height,
+      marginTop: pageSettings.marginTop,
+      marginRight: pageSettings.marginRight,
+      marginBottom: pageSettings.marginBottom,
+      marginLeft: pageSettings.marginLeft,
+      pageGap: pageSettings.pageGap,
+    });
+    editor.view.dispatch(editor.state.tr
+      .setMeta(paginationPluginKey, null)
+      .setMeta("addToHistory", false));
+  }, [editor, pageSettings]);
 
   useEffect(() => {
     if (!editor || !initialContent) return;
@@ -188,6 +207,7 @@ const EditorCanvas = () => {
         "--page-margin-right": `${pageSettings.marginRight}px`,
         "--page-margin-bottom": `${pageSettings.marginBottom}px`,
         "--page-margin-left": `${pageSettings.marginLeft}px`,
+        "--page-gap": `${pageSettings.pageGap}px`,
       }}
     >
       <EditorContent editor={editor} aria-label="Document editing area" />
