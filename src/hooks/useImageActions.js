@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import toast from "react-hot-toast";
 import useDialog from "./useDialog";
 
@@ -21,8 +21,6 @@ const readFileAsDataUrl = (file) =>
 
 const useImageActions = (editor) => {
   const { prompt, confirm } = useDialog();
-  const imageInputRef = useRef(null);
-
   const insertImageFromUrl = useCallback(async () => {
     if (!editor) return;
 
@@ -66,7 +64,7 @@ const useImageActions = (editor) => {
   }, [editor, prompt]);
 
   const chooseImageFile = useCallback(() => {
-    imageInputRef.current?.click();
+    document.getElementById("inkflow-image-input")?.click();
   }, []);
 
   const insertImageFile = useCallback(
@@ -212,7 +210,6 @@ const useImageActions = (editor) => {
   }, [editor, confirm]);
 
   return {
-    imageInputRef,
     chooseImageFile,
     insertImageFromUrl,
     insertImageFile,

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useEditorContext } from "../../context/EditorContext";
 import { useAuth } from "../../context/AuthContext";
 import useTheme from "../../hooks/useTheme";
@@ -36,6 +36,7 @@ import {
 import themes from "../../config/themes";
 import Divider from "../UI/Divider";
 import PageSetupPanel from "./PageSetupPanel";
+import toast from "react-hot-toast";
 
 const MenuBar = () => {
   const { currentTitle, setCurrentTitle, isSidebarOpen, returnToWelcome, pageSettings } = useEditorContext();
@@ -70,10 +71,63 @@ const MenuBar = () => {
 
   const ThemeIcon = theme === "dark" || theme === "dark-purple" ? Sun : Moon;
 
+  const copySelection = async (cut = false) => {
+    actions.closeMenu();
+    const editor = actions.editor;
+    if (!editor || editor.state.selection.empty) return;
+    const { from, to } = editor.state.selection;
+    const text = editor.state.doc.textBetween(from, to, "\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      if (cut) editor.chain().focus().deleteSelection().run();
+    } catch {
+      toast.error("Clipboard access is unavailable. Check your browser permissions.");
+    }
+  };
+
+  useEffect(() => {
+    const onShortcut = (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      const shift = event.shiftKey;
+      const commands = {
+        n: !shift ? actions.newDocument : null,
+        o: !shift ? actions.openFile : null,
+        p: !shift ? actions.printDocument : null,
+        f: shift ? actions.openFocusMode : actions.openFindReplace,
+        e: shift ? actions.openExportModal : null,
+        ",": !shift ? actions.toggleSidebar : null,
+      };
+      const command = commands[key];
+      if (!command) return;
+      event.preventDefault();
+      command();
+    };
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  }, [actions.newDocument, actions.openFile, actions.printDocument, actions.openFocusMode, actions.openFindReplace, actions.openExportModal, actions.toggleSidebar]);
+
+  const pasteFromClipboard = async () => {
+    actions.closeMenu();
+    const editor = actions.editor;
+    if (!editor) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      const html = text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replace(/\r?\n/g, "<br>");
+      editor.chain().focus().insertContent(html).run();
+    } catch {
+      toast.error("Clipboard access is unavailable. Check your browser permissions.");
+    }
+  };
+
   return (
     <>
       <input
-        ref={actions.fileInputRef}
+        id="inkflow-file-input"
         type="file"
         accept=".docx,.txt"
         className="hidden"
@@ -82,7 +136,7 @@ const MenuBar = () => {
         onChange={actions.onFileSelected}
       />
       <input
-        ref={actions.imageInputRef}
+        id="inkflow-image-input"
         type="file"
         accept="image/*"
         className="hidden"
@@ -122,7 +176,7 @@ const MenuBar = () => {
         <Divider />
 
         <nav
-          className="flex items-center gap-0.5"
+          className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="menubar"
           aria-label="Application menus"
         >
@@ -196,28 +250,22 @@ const MenuBar = () => {
               icon={Scissors}
               label="Cut"
               shortcut="Ctrl+X"
-              onClick={() => {
-                actions.closeMenu();
-                document.execCommand("cut");
-              }}
+              onClick={() => copySelection(true)}
+              disabled={!actions.editor}
             />
             <MenuAction
               icon={Copy}
               label="Copy"
               shortcut="Ctrl+C"
-              onClick={() => {
-                actions.closeMenu();
-                document.execCommand("copy");
-              }}
+              onClick={() => copySelection(false)}
+              disabled={!actions.editor}
             />
             <MenuAction
               icon={ClipboardPaste}
               label="Paste"
               shortcut="Ctrl+V"
-              onClick={() => {
-                actions.closeMenu();
-                document.execCommand("paste");
-              }}
+              onClick={pasteFromClipboard}
+              disabled={!actions.editor}
             />
             <MenuSeparator />
             <MenuAction
@@ -367,7 +415,6 @@ const MenuBar = () => {
             <MenuAction
               icon={Keyboard}
               label="Keyboard Shortcuts"
-              shortcut="Ctrl+?"
               onClick={actions.openShortcuts}
             />
             <MenuSeparator />
@@ -381,7 +428,7 @@ const MenuBar = () => {
 
         {/* ── Document title ───────────────────────────── */}
         <div
-          className="flex-1 flex items-center justify-center px-4"
+          className="flex min-w-0 flex-1 items-center justify-center px-2 sm:px-4"
           aria-label="Document title area"
         >
           {isTitleEditing ? (

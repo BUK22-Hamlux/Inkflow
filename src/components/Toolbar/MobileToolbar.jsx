@@ -152,7 +152,7 @@ const MobileToolbar = () => {
         aria-orientation="horizontal"
       >
         <div
-          className="flex items-center h-full gap-1 px-2"
+          className="mobile-toolbar-scroll flex h-full max-w-full min-w-0 items-center gap-1 overflow-x-auto px-2"
           style={{
             overflowX: "auto",
             overflowY: "visible",

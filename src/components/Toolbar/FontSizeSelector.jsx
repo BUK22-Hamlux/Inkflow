@@ -62,7 +62,7 @@ const FontSizeSelector = ({ currentSize, onSizeChange, disabled = false }) => {
 
   return (
     <div
-      className=" flex items-center h-8 rounded-md border border-transparent hover:border-border-input transition-all duration-100 overflow-hidden"
+      className="flex h-8 w-[104px] flex-none items-center overflow-hidden rounded-md border border-transparent transition-all duration-100 hover:border-border-input"
       role="group"
       aria-label="Font size control"
     >

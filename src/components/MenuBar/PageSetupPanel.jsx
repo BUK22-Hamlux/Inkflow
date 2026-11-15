@@ -18,7 +18,7 @@ const PageSetupPanel = () => {
 
   const applyPreset = (presetName) => {
     if (presetName === "custom") return;
-    const { label, ...margins } = MARGIN_PRESETS[presetName];
+    const { label: LABEL, ...margins } = MARGIN_PRESETS[presetName];
     updatePageSettings(margins);
   };
 

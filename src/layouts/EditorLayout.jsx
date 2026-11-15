@@ -1,13 +1,15 @@
-const EditorLayout = ({ menuBar, toolbar, sidebar, canvas, statusBar }) => {
+const EditorLayout = ({ menuBar, toolbar, sidebar, canvas, statusBar, focusMode = false }) => {
   return (
     <div className="flex flex-col h-screen w-full bg-app overflow-hidden transition-all duration-theme">
       <header className="h-10 shrink-0 bg-toolbar border-b border-border-toolbar shadow-toolbar z-10 overflow-hidden">
         {menuBar}
       </header>
 
-      <nav className="min-h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-50 overflow-visible">
-        {toolbar}
-      </nav>
+      {!focusMode && (
+        <nav className="min-h-13 shrink-0 bg-toolbar border-b border-border-toolbar z-50 overflow-visible">
+          {toolbar}
+        </nav>
+      )}
 
       <main className="flex-1 flex overflow-hidden relative">
         {sidebar && (

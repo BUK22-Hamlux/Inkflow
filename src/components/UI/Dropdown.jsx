@@ -10,35 +10,39 @@ const Dropdown = ({
   onOpen,
   onClose,
   closeOnPanelClick = true,
+  open,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open ?? internalOpen;
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
 
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const requestedWidth = typeof width === "number" ? width : Number.parseFloat(width) || 280;
+    const availableWidth = Math.max(160, window.innerWidth - 16);
+    const panelWidth = Math.min(requestedWidth, availableWidth);
+    const preferredLeft = align === "right" ? rect.right - panelWidth : rect.left;
+    setPosition({
+      top: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 80)),
+      left: Math.max(8, Math.min(preferredLeft, window.innerWidth - panelWidth - 8)),
+    });
+  }, [align, width]);
+
   const openDropdown = useCallback(() => {
     if (disabled) return;
-
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + window.scrollY + 6,
-        left:
-          align === "right"
-            ? rect.right + window.scrollX
-            : rect.left + window.scrollX,
-      });
-    }
-
-    setIsOpen(true);
+    updatePosition();
+    if (open === undefined) setInternalOpen(true);
     onOpen?.();
-  }, [disabled, onOpen, align]);
+  }, [disabled, onOpen, open, updatePosition]);
 
   const closeDropdown = useCallback(() => {
-    setIsOpen(false);
+    if (open === undefined) setInternalOpen(false);
     onClose?.();
-  }, [onClose]);
+  }, [onClose, open]);
 
   const toggleDropdown = useCallback(() => {
     if (isOpen) {
@@ -77,44 +81,20 @@ const Dropdown = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, closeDropdown]);
 
-  // Recalculate position on scroll or resize while open
   useEffect(() => {
     if (!isOpen) return;
-
-    const recalculate = () => {
-      if (triggerRef.current) {
-        const rect = triggerRef.current.getBoundingClientRect();
-        setPosition({
-          top: rect.bottom + window.scrollY + 6,
-          left:
-            align === "right"
-              ? rect.right + window.scrollX
-              : rect.left + window.scrollX,
-        });
-      }
-    };
-
-    window.addEventListener("scroll", recalculate, true);
-    window.addEventListener("resize", recalculate);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
 
     return () => {
-      window.removeEventListener("scroll", recalculate, true);
-      window.removeEventListener("resize", recalculate);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
     };
-  }, [isOpen, align]);
+  }, [isOpen, updatePosition]);
 
-  const panelWidth =
-    width === "auto"
-      ? "auto"
-      : typeof width === "number"
-        ? `${width}px`
-        : width;
-
-  // Alignment offset
-  const leftOffset =
-    align === "right"
-      ? `calc(${position.left}px - ${panelWidth})`
-      : `${position.left}px`;
+  const panelWidth = width === "auto"
+    ? "min(320px, calc(100vw - 16px))"
+    : `min(${typeof width === "number" ? `${width}px` : width}, calc(100vw - 16px))`;
 
   return (
     <div ref={containerRef} className="relative inline-flex">
@@ -134,10 +114,11 @@ const Dropdown = ({
             aria-orientation="vertical"
             style={{
               top: `${position.top}px`,
-              left: leftOffset,
+              left: `${position.left}px`,
               width: panelWidth,
+              maxHeight: `calc(100dvh - ${position.top}px - 8px)`,
             }}
-            className="absolute min-w-40 bg-dropdown shadow-modal border border-border-toolbar rounded-[10px] z-99999 overflow-hidden"
+            className="fixed min-w-0 bg-dropdown shadow-modal border border-border-toolbar rounded-[10px] z-99999 overflow-y-auto overscroll-contain"
             onClick={(event) => {
               if (!closeOnPanelClick || !event.target.closest('[role="menuitem"]')) return;
               closeDropdown();

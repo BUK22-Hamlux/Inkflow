@@ -206,7 +206,7 @@ const Toolbar = () => {
 
   return (
     <nav
-      className="w-full h-full flex items-center px-3 gap-1 overflow-x-auto"
+      className="w-full h-full min-w-0 max-w-full flex items-center px-3 gap-1 overflow-x-auto"
       aria-label="Text formatting toolbar"
       role="toolbar"
       aria-orientation="horizontal"

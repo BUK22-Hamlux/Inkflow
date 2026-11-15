@@ -15,6 +15,8 @@ const shortcuts = [
   {
     group: "Document",
     items: [
+      { action: "New document", windows: "Ctrl + N", mac: "Cmd + N" },
+      { action: "Open document", windows: "Ctrl + O", mac: "Cmd + O" },
       { action: "Save", windows: "Ctrl + S", mac: "Cmd + S" },
       { action: "Print", windows: "Ctrl + P", mac: "Cmd + P" },
       { action: "Undo", windows: "Ctrl + Z", mac: "Cmd + Z" },

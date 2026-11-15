@@ -15,8 +15,7 @@ const AppContent = () => {
     <>
       <AppToaster />
       {appState === "welcome" && (user ? <AccountDashboard /> : <WelcomePage />)}
-      {appState === "editing" && <EditorPage />}
-      {appState === "focusMode" && <EditorPage />}
+      {(appState === "editing" || appState === "focusMode") && <EditorPage />}
     </>
   );
 };

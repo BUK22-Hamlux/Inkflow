@@ -11,17 +11,32 @@ import { useEditorContext } from "../context/EditorContext";
 import useWindowSize from "../hooks/useWindowSize";
 import useEditorState from "../hooks/useEditorState";
 import toast from "react-hot-toast";
+import ExportModal from "../components/Modals/ExportModal";
+import ShortcutsModal from "../components/Modals/ShortcutsModal";
+import AboutModal from "../components/Modals/AboutModal";
+import FindReplacePanel from "../components/Modals/FindReplacePanel";
 
 const EditorPage = () => {
   const { isMobile } = useWindowSize();
   const {
     editor,
+    appState,
     isSidebarOpen,
     currentDocId,
     currentTitle,
     pageSettings,
     saveCurrentDocument,
+    exitFocusMode,
+    isExportModalOpen,
+    isShortcutsModalOpen,
+    isFindReplaceOpen,
+    isAboutModalOpen,
+    setIsExportModalOpen,
+    setIsShortcutsModalOpen,
+    setIsFindReplaceOpen,
+    setIsAboutModalOpen,
   } = useEditorContext();
+  const isFocusMode = appState === "focusMode";
   const editorState = useEditorState(editor);
   const isInsideTable = editorState?.isInTable ?? false;
   const isImageSelected = editorState?.isImage ?? false;
@@ -50,17 +65,38 @@ const EditorPage = () => {
     };
   }, [editor, currentDocId, currentTitle, pageSettings, saveCurrentDocument]);
 
+  useEffect(() => {
+    const handleSaveShortcut = (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      saveCurrentDocument().catch((error) => {
+        console.error("Document save failed:", error);
+        toast.error(error.message || "Document could not be saved.");
+      });
+    };
+    window.addEventListener("keydown", handleSaveShortcut);
+    return () => window.removeEventListener("keydown", handleSaveShortcut);
+  }, [saveCurrentDocument]);
+
   return (
+    <>
     <EditorLayout
-      menuBar={<MenuBar />}
-      toolbar={
+      focusMode={isFocusMode}
+      menuBar={isFocusMode ? (
+        <div className="flex h-full items-center justify-end px-3">
+          <button type="button" onClick={exitFocusMode} className="h-8 rounded-md border border-border-input px-3 text-sm text-text-primary hover:bg-accent-secondary">
+            Exit focus mode
+          </button>
+        </div>
+      ) : <MenuBar />}
+      toolbar={isFocusMode ? null : (
         <div className="flex w-full flex-col">
           {isMobile ? <MobileToolbar /> : <Toolbar />}
           {isInsideTable && <TableToolbar />}
           {isImageSelected && <ImageToolbar />}
         </div>
-      }
-      sidebar={isSidebarOpen ? <DocumentSettings /> : null}
+      )}
+      sidebar={!isFocusMode && isSidebarOpen ? <DocumentSettings /> : null}
       canvas={<EditorCanvas />}
       statusBar={
         <div className="h-full flex items-center px-4 text-xs text-text-secondary">
@@ -68,6 +104,11 @@ const EditorPage = () => {
         </div>
       }
     />
+    {isExportModalOpen && <ExportModal editor={editor} title={currentTitle} pageSettings={pageSettings} onClose={() => setIsExportModalOpen(false)} />}
+    {isShortcutsModalOpen && <ShortcutsModal onClose={() => setIsShortcutsModalOpen(false)} />}
+    {isFindReplaceOpen && <FindReplacePanel editor={editor} onClose={() => setIsFindReplaceOpen(false)} />}
+    {isAboutModalOpen && <AboutModal onClose={() => setIsAboutModalOpen(false)} />}
+    </>
   );
 };
 
