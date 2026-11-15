@@ -371,6 +371,7 @@ export const EditorProvider = ({ children }) => {
       setInitialContent(null);
       setPageSettings(DEFAULT_PAGE_SETTINGS);
       setAppState("editing");
+      window.history.pushState({ inkflow: true, view: "document", docId: newDoc.id, storage: user ? "account" : "local" }, "", window.location.href);
       toast.success("New document created");
     } catch (error) {
       console.error("Failed to create new document:", error);
@@ -410,7 +411,7 @@ export const EditorProvider = ({ children }) => {
   }, [editor, currentDocId, currentTitle, pageSettings, user, syncLocalDocument]);
 
   const openExistingDocument = (doc, options = {}) => {
-    const { showToast = true, storage = "local" } = options;
+    const { showToast = true, storage = "local", fromHistory = false } = options;
 
     setCurrentDocId(doc.id);
     setDocumentStorage(storage);
@@ -419,12 +420,21 @@ export const EditorProvider = ({ children }) => {
     setPageSettings(normalizePageSettings(doc.pageSettings));
     setAppState("editing");
 
+    if (!fromHistory) {
+      window.history.pushState({ inkflow: true, view: "document", docId: doc.id, storage }, "", window.location.href);
+    }
+
     if (showToast) {
       toast.success(`"${doc.title || "Untitled Document"}" opened`);
     }
   };
 
   const returnToWelcome = () => {
+    if ((appState === "editing" || appState === "focusMode") && window.history.state?.inkflow) {
+      window.history.back();
+      return;
+    }
+
     setAppState("welcome");
     setCurrentDocId(null);
     setCurrentTitle("Untitled Document");
@@ -434,6 +444,41 @@ export const EditorProvider = ({ children }) => {
     setPageSettings(DEFAULT_PAGE_SETTINGS);
     setEditorInstance(null);
   };
+
+  useEffect(() => {
+    if (!window.history.state?.inkflow) {
+      window.history.replaceState({ inkflow: true, view: "welcome" }, "", window.location.href);
+    }
+
+    const restoreRoute = async (route) => {
+      if (route?.inkflow && route.view === "document" && route.docId) {
+        const document = await getDocumentById(route.docId);
+        if (document) {
+          openExistingDocument(document, {
+            storage: route.storage || (document.ownerUserId ? "account" : "local"),
+            showToast: false,
+            fromHistory: true,
+          });
+          return;
+        }
+      }
+
+      setAppState("welcome");
+      setCurrentDocId(null);
+      setCurrentTitle("Untitled Document");
+      setInitialContent(null);
+      setPageSettings(DEFAULT_PAGE_SETTINGS);
+      setDocumentStorage("local");
+      setEditorInstance(null);
+    };
+
+    if (window.history.state?.view === "document") {
+      restoreRoute(window.history.state);
+    }
+    const onPopState = (event) => restoreRoute(event.state);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const enterFocusMode = () => setAppState("focusMode");
   const exitFocusMode = () => setAppState("editing");

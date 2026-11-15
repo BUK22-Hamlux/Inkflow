@@ -6,8 +6,10 @@ import useMenuActions from "../../hooks/useMenuActions";
 import MenuItem from "./MenuItem";
 import { MenuAction, MenuSeparator } from "./MenuAction";
 import TablePicker from "../Toolbar/TablePicker";
+import Dropdown from "../UI/Dropdown";
 import {
   PenLine,
+  ChevronDown,
   Sun,
   Moon,
   FilePlus,
@@ -39,7 +41,13 @@ import PageSetupPanel from "./PageSetupPanel";
 import toast from "react-hot-toast";
 
 const MenuBar = () => {
-  const { currentTitle, setCurrentTitle, isSidebarOpen, returnToWelcome, pageSettings } = useEditorContext();
+  const {
+    currentTitle,
+    setCurrentTitle,
+    isSidebarOpen,
+    returnToWelcome,
+    pageSettings,
+  } = useEditorContext();
   const { user } = useAuth();
   const { theme } = useTheme();
 
@@ -81,7 +89,9 @@ const MenuBar = () => {
       await navigator.clipboard.writeText(text);
       if (cut) editor.chain().focus().deleteSelection().run();
     } catch {
-      toast.error("Clipboard access is unavailable. Check your browser permissions.");
+      toast.error(
+        "Clipboard access is unavailable. Check your browser permissions.",
+      );
     }
   };
 
@@ -105,7 +115,15 @@ const MenuBar = () => {
     };
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
-  }, [actions.newDocument, actions.openFile, actions.printDocument, actions.openFocusMode, actions.openFindReplace, actions.openExportModal, actions.toggleSidebar]);
+  }, [
+    actions.newDocument,
+    actions.openFile,
+    actions.printDocument,
+    actions.openFocusMode,
+    actions.openFindReplace,
+    actions.openExportModal,
+    actions.toggleSidebar,
+  ]);
 
   const pasteFromClipboard = async () => {
     actions.closeMenu();
@@ -120,7 +138,9 @@ const MenuBar = () => {
         .replace(/\r?\n/g, "<br>");
       editor.chain().focus().insertContent(html).run();
     } catch {
-      toast.error("Clipboard access is unavailable. Check your browser permissions.");
+      toast.error(
+        "Clipboard access is unavailable. Check your browser permissions.",
+      );
     }
   };
 
@@ -330,7 +350,9 @@ const MenuBar = () => {
             width="300px"
             keepOpen
           >
-            <PageSetupPanel key={`${pageSettings.pageSize}-${pageSettings.orientation}`} />
+            <PageSetupPanel
+              key={`${pageSettings.pageSize}-${pageSettings.orientation}`}
+            />
           </MenuItem>
 
           {/* Insert */}
@@ -428,7 +450,7 @@ const MenuBar = () => {
 
         {/* ── Document title ───────────────────────────── */}
         <div
-          className="flex min-w-0 flex-1 items-center justify-center px-2 sm:px-4"
+          className="hidden sm:flex min-w-0 flex-1 items-center justify-center px-2 sm:px-4"
           aria-label="Document title area"
         >
           {isTitleEditing ? (
@@ -468,7 +490,7 @@ const MenuBar = () => {
 
         {/* ── Right side controls ──────────────────────── */}
         <div
-          className="flex items-center gap-1.5 ml-auto shrink-0"
+          className="hidden sm:flex items-center gap-1.5 ml-auto shrink-0"
           role="group"
           aria-label="Application controls"
         >
@@ -485,19 +507,72 @@ const MenuBar = () => {
             type="button"
             onClick={returnToWelcome}
             className="w-7 h-7 rounded-full bg-accent-secondary flex items-center justify-center text-xs font-semibold text-accent-primary select-none shrink-0"
-            aria-label={user ? `Account dashboard for ${user.name || user.email}` : "Return to welcome page"}
+            aria-label={
+              user
+                ? `Account dashboard for ${user.name || user.email}`
+                : "Return to welcome page"
+            }
             title={user?.email || "Welcome page"}
           >
             {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
           </button>
+        </div>
 
-          <button
-            type="button"
-            aria-label="Share this document"
-            className="h-7 px-3 flex items-center bg-accent-primary hover:bg-accent-primary-hover text-text-on-accent rounded-lg text-xs font-semibold transition-colors duration-150 shrink-0"
+        <div className="sm:hidden ml-auto shrink-0">
+          <Dropdown
+            align="right"
+            width="240px"
+            closeOnPanelClick={false}
+            trigger={
+              <button
+                type="button"
+                className="h-8 max-w-36 flex items-center gap-1 rounded-md px-2 text-xs font-medium text-text-primary hover:bg-accent-secondary"
+                aria-label="Document and app options"
+              >
+                <ChevronDown
+                  size={14}
+                  className="shrink-0 text-text-muted"
+                  aria-hidden="true"
+                />
+              </button>
+            }
           >
-            Share
-          </button>
+            <div className="p-3">
+              <label
+                className="mb-1 block text-xs font-medium text-text-secondary"
+                htmlFor="mobile-document-title"
+              >
+                Document name
+              </label>
+              <input
+                id="mobile-document-title"
+                type="text"
+                value={titleDraft}
+                onFocus={() => setTitleDraft(currentTitle)}
+                onChange={(event) => setTitleDraft(event.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleTitleKeyDown}
+                maxLength={100}
+                className="h-9 w-full rounded-md border border-border-input bg-app px-2 text-sm text-text-primary outline-none focus:border-accent-primary"
+              />
+            </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={actions.cycleThroughThemes}
+              className="w-full px-3 py-2.5 text-left text-sm text-text-primary hover:bg-accent-secondary"
+            >
+              Switch theme
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={returnToWelcome}
+              className="w-full px-3 py-2.5 text-left text-sm text-text-primary hover:bg-accent-secondary"
+            >
+              {user ? "My documents" : "Welcome page"}
+            </button>
+          </Dropdown>
         </div>
       </header>
     </>

@@ -9,11 +9,18 @@ const FontFamilySelector = ({
 }) => {
   const triggerRef = useRef(null);
 
-  const displayLabel = () => {
-    if (!currentFont) return "Default";
-    const found = fonts.find((f) => f.value === currentFont);
-    return found ? found.label : "Default";
-  };
+  const activeFamily = (currentFont || "Inter")
+    .split(",")[0]
+    .replace(/["']/g, "")
+    .trim()
+    .toLowerCase();
+  const activeFont =
+    fonts.find(
+      (font) =>
+        font.value.split(",")[0].replace(/["']/g, "").trim().toLowerCase() ===
+        activeFamily,
+    ) || fonts[0];
+  const displayLabel = activeFont.label;
   const sortedFonts = [...fonts].sort((a, b) => a.label.localeCompare(b.label));
 
   return (
@@ -23,14 +30,14 @@ const FontFamilySelector = ({
           ref={triggerRef}
           type="button"
           disabled={disabled}
-          aria-label={`Font family: ${displayLabel()}. Click to change font`}
+          aria-label={`Font family: ${displayLabel}. Click to change font`}
           aria-disabled={disabled}
-          className=" h-8 px-3 flex items-center gap-1.5 rounded-md text-xs font-medium text-text-primary hover:bg-accent-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-100 border border-transparent hover:border-border-input min-w-32 max-w-44"
+          className="h-8 min-w-20 max-w-23 sm:max-w-40 px-2 flex items-center gap-1 rounded-md text-xs font-medium text-text-primary hover:bg-accent-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-100 border border-transparent hover:border-border-input"
           style={{
-            fontFamily: currentFont || "inherit",
+            fontFamily: activeFont.value,
           }}
         >
-          <span className="truncate flex-1 text-left">{displayLabel()}</span>
+          <span className="truncate flex-1 text-left">{displayLabel}</span>
           <svg
             width="12"
             height="12"
@@ -62,14 +69,14 @@ const FontFamilySelector = ({
           <button
             key={font.value}
             role="option"
-            aria-selected={currentFont === font.value}
+            aria-selected={activeFont.value === font.value}
             type="button"
             onClick={() => onFontChange(font.value)}
             className=" w-full px-3 py-2 text-left text-sm text-text-primary hover:bg-accent-secondary transition-colors duration-100 flex items-center justify-between gap-2"
             style={{ fontFamily: font.value }}
           >
             <span>{font.label}</span>
-            {currentFont === font.value && (
+            {activeFont.value === font.value && (
               <svg
                 width="14"
                 height="14"

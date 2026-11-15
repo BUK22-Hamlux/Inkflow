@@ -69,7 +69,9 @@ const useEditorState = (editor) => {
       alignRight: editor.isActive({ textAlign: "right" }),
       alignJustify: editor.isActive({ textAlign: "justify" }),
 
-      currentFontFamily: editor.getAttributes("textStyle").fontFamily ?? "",
+      currentFontFamily: editor.getAttributes("textStyle").fontFamily
+        ?? window.getComputedStyle(editor.view.dom).fontFamily
+        ?? "",
       currentFontSize: editor.getAttributes("textStyle").fontSize
         ? editor.getAttributes("textStyle").fontSize.replace("px", "")
         : "14",
